@@ -5,6 +5,7 @@ public class DeviceSummary {
     private String name;
     private String type;
     private String status;
+    private Double maxConsumption;
 
     public Integer getId() {
         return id;
@@ -36,5 +37,13 @@ public class DeviceSummary {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public Double getMaxConsumption() {
+        return maxConsumption;
+    }
+
+    public void setMaxConsumption(Double maxConsumption) {
+        this.maxConsumption = maxConsumption;
     }
 }

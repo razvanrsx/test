@@ -4,6 +4,7 @@ import com.example.device.model.Device;
 import com.example.device.repository.DeviceRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class DeviceController {
 
     @PostMapping
     public ResponseEntity<Device> create(@RequestBody Device device) {
-        if (device.getName() == null || device.getType() == null) {
+        if (!StringUtils.hasText(device.getName()) || !StringUtils.hasText(device.getType()) || device.getMaxConsumption() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         device.setId(null);
@@ -42,8 +43,15 @@ public class DeviceController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Device> update(@PathVariable Integer id, @RequestBody Device device) {
-        if (deviceRepository.findById(id).isEmpty()) {
+        Optional<Device> existingDevice = deviceRepository.findById(id);
+        if (existingDevice.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        if (!StringUtils.hasText(device.getName()) || !StringUtils.hasText(device.getType())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        if (device.getMaxConsumption() == null) {
+            device.setMaxConsumption(existingDevice.get().getMaxConsumption());
         }
         device.setId(id);
         Device saved = deviceRepository.save(device);

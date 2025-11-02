@@ -158,7 +158,7 @@ function renderUsers() {
     const row = document.createElement('tr');
     row.innerHTML = `
       <td>${user.id ?? ''}</td>
-      <td>${escapeHtml(user.name)}</td>
+      <td>${escapeHtml(user.username)}</td>
       <td>${escapeHtml(user.email)}</td>
       <td>${escapeHtml(user.role)}</td>
       <td>
@@ -175,7 +175,7 @@ function renderUsers() {
 function renderDevices() {
   devicesTable.innerHTML = '';
   if (!state.devices.length) {
-    devicesTable.innerHTML = '<tr><td colspan="5">No devices found.</td></tr>';
+    devicesTable.innerHTML = '<tr><td colspan="6">No devices found.</td></tr>';
     return;
   }
 
@@ -186,6 +186,7 @@ function renderDevices() {
       <td>${escapeHtml(device.name)}</td>
       <td>${escapeHtml(device.type)}</td>
       <td>${escapeHtml(device.status)}</td>
+      <td>${device.maxConsumption != null ? escapeHtml(device.maxConsumption) : ''}</td>
       <td>
         <div class="actions">
           <button type="button" class="secondary edit-device" data-id="${device.id}">Edit</button>
@@ -221,7 +222,7 @@ usersTable.addEventListener('click', async (event) => {
   if (target.matches('.delete-user')) {
     const id = Number(target.dataset.id);
     const user = state.users.find((item) => item.id === id);
-    if (user && confirm(`Delete user ${user.name}?`)) {
+    if (user && confirm(`Delete user ${user.username}?`)) {
       setStatus(userStatus, 'Deleting user…');
       try {
         await request(`/users/${id}`, { method: 'DELETE' });
@@ -262,16 +263,25 @@ devicesTable.addEventListener('click', async (event) => {
 userForm.addEventListener('submit', async (event) => {
   event.preventDefault();
   const id = document.getElementById('user-id').value;
-  const name = document.getElementById('user-name').value.trim();
+  const username = document.getElementById('user-username').value.trim();
+  const password = document.getElementById('user-password').value;
   const email = document.getElementById('user-email').value.trim();
   const role = document.getElementById('user-role').value;
 
-  if (!name || !email || !role) {
-    setStatus(userStatus, 'All fields are required.', 'error');
+  if (!username || !email || !role) {
+    setStatus(userStatus, 'Username, email, and role are required.', 'error');
     return;
   }
 
-  const payload = { name, email, role };
+  if (!id && !password) {
+    setStatus(userStatus, 'Password is required when creating a user.', 'error');
+    return;
+  }
+
+  const payload = { username, email, role };
+  if (password) {
+    payload.password = password;
+  }
   const method = id ? 'PUT' : 'POST';
   const path = id ? `/users/${id}` : '/users';
   if (id) {
@@ -300,13 +310,15 @@ deviceForm.addEventListener('submit', async (event) => {
   const name = document.getElementById('device-name').value.trim();
   const type = document.getElementById('device-type').value.trim();
   const status = document.getElementById('device-status').value;
+  const maxConsumptionValue = document.getElementById('device-max-consumption').value;
+  const maxConsumption = maxConsumptionValue ? Number(maxConsumptionValue) : null;
 
-  if (!name || !type || !status) {
-    setStatus(deviceStatus, 'All fields are required.', 'error');
+  if (!name || !type || !status || maxConsumption === null || Number.isNaN(maxConsumption)) {
+    setStatus(deviceStatus, 'Name, type, status, and max consumption are required.', 'error');
     return;
   }
 
-  const payload = { name, type, status };
+  const payload = { name, type, status, maxConsumption };
   const method = id ? 'PUT' : 'POST';
   const path = id ? `/devices/${id}` : '/devices';
   if (id) {
@@ -331,7 +343,8 @@ deviceCancelButton.addEventListener('click', () => {
 
 function fillUserForm(user) {
   document.getElementById('user-id').value = user.id ?? '';
-  document.getElementById('user-name').value = user.name ?? '';
+  document.getElementById('user-username').value = user.username ?? '';
+  document.getElementById('user-password').value = '';
   document.getElementById('user-email').value = user.email ?? '';
   document.getElementById('user-role').value = user.role ?? '';
   userFormTitle.textContent = 'Edit user';
@@ -342,12 +355,15 @@ function fillDeviceForm(device) {
   document.getElementById('device-name').value = device.name ?? '';
   document.getElementById('device-type').value = device.type ?? '';
   document.getElementById('device-status').value = device.status ?? '';
+  document.getElementById('device-max-consumption').value =
+    device.maxConsumption != null ? device.maxConsumption : '';
   deviceFormTitle.textContent = 'Edit device';
 }
 
 function resetUserForm() {
   userForm.reset();
   document.getElementById('user-id').value = '';
+  document.getElementById('user-password').value = '';
   userFormTitle.textContent = 'Create user';
 }
 

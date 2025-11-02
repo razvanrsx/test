@@ -3,12 +3,14 @@
     "id": 1,
     "name": "Solar Panel",
     "type": "GENERATOR",
-    "status": "ACTIVE"
+    "status": "ACTIVE",
+    "maxConsumption": 5.5
   },
   {
     "id": 2,
     "name": "Battery Bank",
     "type": "STORAGE",
-    "status": "INACTIVE"
+    "status": "INACTIVE",
+    "maxConsumption": 2.3
   }
 ]

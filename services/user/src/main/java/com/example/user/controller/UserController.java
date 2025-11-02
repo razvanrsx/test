@@ -4,6 +4,7 @@ import com.example.user.model.User;
 import com.example.user.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User user) {
-        if (user.getName() == null || user.getEmail() == null) {
+        if (!StringUtils.hasText(user.getUsername()) || !StringUtils.hasText(user.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         user.setId(null);
@@ -42,8 +43,15 @@ public class UserController {
 
     @PutMapping("/{id}")
     public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody User user) {
-        if (userRepository.findById(id).isEmpty()) {
+        Optional<User> existingUser = userRepository.findById(id);
+        if (existingUser.isEmpty()) {
             return ResponseEntity.notFound().build();
+        }
+        if (!StringUtils.hasText(user.getUsername())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        if (!StringUtils.hasText(user.getPassword())) {
+            user.setPassword(existingUser.get().getPassword());
         }
         user.setId(id);
         User saved = userRepository.save(user);

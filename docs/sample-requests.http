@@ -15,7 +15,8 @@ POST http://localhost:8081/users
 Content-Type: application/json
 
 {
-  "name": "Charlie Example",
+  "username": "charlie",
+  "password": "charlie123",
   "email": "charlie@example.com",
   "role": "USER"
 }
@@ -27,7 +28,8 @@ Content-Type: application/json
 {
   "name": "Inverter",
   "type": "INVERTER",
-  "status": "ACTIVE"
+  "status": "ACTIVE",
+  "maxConsumption": 3.7
 }
 
 ### Fetch all devices through the gateway

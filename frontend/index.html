@@ -37,7 +37,7 @@
             <thead>
               <tr>
                 <th>ID</th>
-                <th>Name</th>
+                <th>Username</th>
                 <th>Email</th>
                 <th>Role</th>
                 <th></th>
@@ -49,8 +49,13 @@
           <form id="user-form" class="split">
             <input type="hidden" id="user-id" />
             <div class="field">
-              <label for="user-name">Name</label>
-              <input id="user-name" required />
+              <label for="user-username">Username</label>
+              <input id="user-username" autocomplete="off" required />
+            </div>
+            <div class="field">
+              <label for="user-password">Password</label>
+              <input id="user-password" type="password" autocomplete="new-password" />
+              <small class="help-text">Required when creating a user. Leave blank to keep the existing password when editing.</small>
             </div>
             <div class="field">
               <label for="user-email">Email</label>
@@ -84,6 +89,7 @@
                 <th>Name</th>
                 <th>Type</th>
                 <th>Status</th>
+                <th>Max consumption</th>
                 <th></th>
               </tr>
             </thead>
@@ -108,6 +114,10 @@
                 <option value="OFFLINE">OFFLINE</option>
                 <option value="MAINTENANCE">MAINTENANCE</option>
               </select>
+            </div>
+            <div class="field">
+              <label for="device-max-consumption">Max consumption (kW)</label>
+              <input id="device-max-consumption" type="number" step="0.1" min="0" required />
             </div>
             <div class="form-actions">
               <button type="submit">Save</button>

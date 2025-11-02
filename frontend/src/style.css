@@ -163,3 +163,10 @@ table tbody tr:hover {
 .status.success {
   color: #047857;
 }
+
+.help-text {
+  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  color: #52606d;
+  display: block;
+}
