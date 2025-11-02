@@ -1,0 +1,34 @@
+### Obtain a JWT token
+POST http://localhost:8080/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### List users via the gateway
+GET http://localhost:8083/gateway/users
+
+### Create a new user
+POST http://localhost:8081/users
+Content-Type: application/json
+
+{
+  "name": "Charlie Example",
+  "email": "charlie@example.com",
+  "role": "USER"
+}
+
+### Create a device via the device service
+POST http://localhost:8082/devices
+Content-Type: application/json
+
+{
+  "name": "Inverter",
+  "type": "INVERTER",
+  "status": "ACTIVE"
+}
+
+### Fetch all devices through the gateway
+GET http://localhost:8083/gateway/devices

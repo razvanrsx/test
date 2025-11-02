@@ -1,0 +1,14 @@
+[
+  {
+    "id": 1,
+    "name": "Solar Panel",
+    "type": "GENERATOR",
+    "status": "ACTIVE"
+  },
+  {
+    "id": 2,
+    "name": "Battery Bank",
+    "type": "STORAGE",
+    "status": "INACTIVE"
+  }
+]

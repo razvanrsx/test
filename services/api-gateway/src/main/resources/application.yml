@@ -1,0 +1,14 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: api-gateway
+
+services:
+  authorization:
+    url: ${AUTH_SERVICE_URL:http://authorization-service:8080}
+  user:
+    url: ${USER_SERVICE_URL:http://user-service:8081}
+  device:
+    url: ${DEVICE_SERVICE_URL:http://device-service:8082}

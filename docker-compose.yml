@@ -1,0 +1,32 @@
+version: "3.9"
+
+services:
+  authorization-service:
+    build: ./services/authorization
+    ports:
+      - "8080:8080"
+    environment:
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-in-production}
+
+  user-service:
+    build: ./services/user
+    ports:
+      - "8081:8081"
+
+  device-service:
+    build: ./services/device
+    ports:
+      - "8082:8082"
+
+  api-gateway:
+    build: ./services/api-gateway
+    depends_on:
+      - authorization-service
+      - user-service
+      - device-service
+    ports:
+      - "8083:8083"
+    environment:
+      AUTH_SERVICE_URL: http://authorization-service:8080
+      USER_SERVICE_URL: http://user-service:8081
+      DEVICE_SERVICE_URL: http://device-service:8082
