@@ -1,0 +1,18 @@
+CREATE TABLE IF NOT EXISTS devices (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(255) UNIQUE NOT NULL,
+    type VARCHAR(255) NOT NULL,
+    status VARCHAR(255) NOT NULL,
+    max_consumption DOUBLE PRECISION NOT NULL,
+    user_id BIGINT NOT NULL
+);
+
+ALTER TABLE devices
+    ADD COLUMN IF NOT EXISTS user_id BIGINT;
+
+UPDATE devices
+SET user_id = 1
+WHERE user_id IS NULL;
+
+ALTER TABLE devices
+    ALTER COLUMN user_id SET NOT NULL;
