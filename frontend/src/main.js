@@ -102,7 +102,7 @@ loginForm.addEventListener('submit', async (event) => {
   const password = formData.get('password');
   setStatus(loginStatus, 'Signing in…');
   try {
-    const result = await request('/login', {
+    const result = await request('/auth/token', {
       method: 'POST',
       body: { username, password }
     });

@@ -4,3 +4,18 @@ server:
 spring:
   application:
     name: device-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/devices}
+    username: ${SPRING_DATASOURCE_USERNAME:device_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:device_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: true

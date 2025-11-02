@@ -1,17 +1,17 @@
 package com.example.authorization.model;
 
 public class UserRecord {
-    private Integer id;
+    private Long id;
     private String username;
     private String password;
     private String email;
     private String role;
 
-    public Integer getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(Integer id) {
+    public void setId(Long id) {
         this.id = id;
     }
 
@@ -19,6 +19,7 @@ public class UserRecord {
         return username;
     }
 
+    @com.fasterxml.jackson.annotation.JsonAlias("name")
     public void setUsername(String username) {
         this.username = username;
     }

@@ -26,14 +26,14 @@ public class DeviceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Device> getById(@PathVariable Integer id) {
+    public ResponseEntity<Device> getById(@PathVariable Long id) {
         Optional<Device> device = deviceRepository.findById(id);
         return device.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
     public ResponseEntity<Device> create(@RequestBody Device device) {
-        if (!StringUtils.hasText(device.getName()) || !StringUtils.hasText(device.getType()) || device.getMaxConsumption() == null) {
+        if (!isValid(device)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
         device.setId(null);
@@ -42,28 +42,37 @@ public class DeviceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Device> update(@PathVariable Integer id, @RequestBody Device device) {
+    public ResponseEntity<Device> update(@PathVariable Long id, @RequestBody Device device) {
         Optional<Device> existingDevice = deviceRepository.findById(id);
         if (existingDevice.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        if (!StringUtils.hasText(device.getName()) || !StringUtils.hasText(device.getType())) {
+        if (!isValid(device)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        if (device.getMaxConsumption() == null) {
-            device.setMaxConsumption(existingDevice.get().getMaxConsumption());
-        }
-        device.setId(id);
-        Device saved = deviceRepository.save(device);
+        Device toUpdate = existingDevice.get();
+        toUpdate.setName(device.getName());
+        toUpdate.setType(device.getType());
+        toUpdate.setStatus(device.getStatus());
+        toUpdate.setMaxConsumption(device.getMaxConsumption());
+        Device saved = deviceRepository.save(toUpdate);
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        boolean removed = deviceRepository.delete(id);
-        if (!removed) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!deviceRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        deviceRepository.deleteById(id);
         return ResponseEntity.noContent().build();
+    }
+
+    private boolean isValid(Device device) {
+        return device != null
+                && StringUtils.hasText(device.getName())
+                && StringUtils.hasText(device.getType())
+                && StringUtils.hasText(device.getStatus())
+                && device.getMaxConsumption() != null;
     }
 }

@@ -26,9 +26,10 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getById(@PathVariable Integer id) {
-        Optional<User> user = userRepository.findById(id);
-        return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    public ResponseEntity<User> getById(@PathVariable Long id) {
+        return userRepository.findById(id)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/search")
@@ -36,7 +37,7 @@ public class UserController {
         if (!StringUtils.hasText(username)) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        return userRepository.findByUsername(username)
+        return userRepository.findByUsernameIgnoreCase(username)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
     }
@@ -46,13 +47,19 @@ public class UserController {
         if (!StringUtils.hasText(user.getUsername()) || !StringUtils.hasText(user.getPassword())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
+        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        if (userRepository.existsByUsernameIgnoreCase(user.getUsername())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
         user.setId(null);
         User saved = userRepository.save(user);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<User> update(@PathVariable Integer id, @RequestBody User user) {
+    public ResponseEntity<User> update(@PathVariable Long id, @RequestBody User user) {
         Optional<User> existingUser = userRepository.findById(id);
         if (existingUser.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -60,20 +67,30 @@ public class UserController {
         if (!StringUtils.hasText(user.getUsername())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        if (!StringUtils.hasText(user.getPassword())) {
-            user.setPassword(existingUser.get().getPassword());
+        if (!StringUtils.hasText(user.getEmail()) || !StringUtils.hasText(user.getRole())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
-        user.setId(id);
-        User saved = userRepository.save(user);
+        User toUpdate = existingUser.get();
+        Optional<User> duplicate = userRepository.findByUsernameIgnoreCase(user.getUsername());
+        if (duplicate.isPresent() && !duplicate.get().getId().equals(id)) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).build();
+        }
+        toUpdate.setUsername(user.getUsername());
+        toUpdate.setEmail(user.getEmail());
+        toUpdate.setRole(user.getRole());
+        if (StringUtils.hasText(user.getPassword())) {
+            toUpdate.setPassword(user.getPassword());
+        }
+        User saved = userRepository.save(toUpdate);
         return ResponseEntity.ok(saved);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Integer id) {
-        boolean removed = userRepository.delete(id);
-        if (!removed) {
+    public ResponseEntity<Void> delete(@PathVariable Long id) {
+        if (!userRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }
+        userRepository.deleteById(id);
         return ResponseEntity.noContent().build();
     }
 }

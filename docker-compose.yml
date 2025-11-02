@@ -1,32 +1,94 @@
 version: "3.9"
 
 services:
-  authorization-service:
-    build: ./services/authorization
+  traefik:
+    image: traefik:v2.10
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8080
     ports:
       - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  authorization-service:
+    build: ./services/authorization
+    depends_on:
+      - authorization-db
     environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://authorization-db:5432/authorization
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: auth_password
       AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-in-production}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authorization.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.authorization.entrypoints=web"
+      - "traefik.http.middlewares.authorization-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.authorization.middlewares=authorization-strip"
+      - "traefik.http.services.authorization.loadbalancer.server.port=8080"
+
+  authorization-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: authorization
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    volumes:
+      - authorization-data:/var/lib/postgresql/data
 
   user-service:
     build: ./services/user
-    ports:
-      - "8081:8081"
+    depends_on:
+      - user-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/users
+      SPRING_DATASOURCE_USERNAME: user_user
+      SPRING_DATASOURCE_PASSWORD: user_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.users.entrypoints=web"
+      - "traefik.http.middlewares.users-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.users.middlewares=users-strip"
+      - "traefik.http.services.users.loadbalancer.server.port=8081"
+
+  user-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_password
+    volumes:
+      - user-data:/var/lib/postgresql/data
 
   device-service:
     build: ./services/device
-    ports:
-      - "8082:8082"
-
-  api-gateway:
-    build: ./services/api-gateway
     depends_on:
-      - authorization-service
-      - user-service
-      - device-service
-    ports:
-      - "8083:8083"
+      - device-db
     environment:
-      AUTH_SERVICE_URL: http://authorization-service:8080
-      USER_SERVICE_URL: http://user-service:8081
-      DEVICE_SERVICE_URL: http://device-service:8082
+      SPRING_DATASOURCE_URL: jdbc:postgresql://device-db:5432/devices
+      SPRING_DATASOURCE_USERNAME: device_user
+      SPRING_DATASOURCE_PASSWORD: device_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.devices.rule=PathPrefix(`/api/devices`)"
+      - "traefik.http.routers.devices.entrypoints=web"
+      - "traefik.http.middlewares.devices-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.devices.middlewares=devices-strip"
+      - "traefik.http.services.devices.loadbalancer.server.port=8082"
+
+  device-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: devices
+      POSTGRES_USER: device_user
+      POSTGRES_PASSWORD: device_password
+    volumes:
+      - device-data:/var/lib/postgresql/data
+
+volumes:
+  authorization-data:
+  user-data:
+  device-data:

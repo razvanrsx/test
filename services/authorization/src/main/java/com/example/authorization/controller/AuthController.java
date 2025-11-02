@@ -6,24 +6,24 @@ import com.example.authorization.model.TokenResponse;
 import com.example.authorization.model.UserRecord;
 import com.example.authorization.repository.CredentialRepository;
 import com.example.authorization.service.JwtService;
-import org.springframework.beans.factory.annotation.Value;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.util.StringUtils;
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
-import java.util.Optional;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
@@ -51,7 +51,7 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }
 
-        Optional<Credential> credentialOpt = credentialRepository.findByUsername(request.getUsername());
+        Optional<Credential> credentialOpt = credentialRepository.findByUsernameIgnoreCase(request.getUsername());
         if (credentialOpt.isEmpty()) {
             Optional<UserRecord> userRecord = fetchUserRecord(request.getUsername());
             if (userRecord.isEmpty()) {
@@ -79,7 +79,10 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String token = jwtService.generateToken(credential.getUsername(), credential.getRoles());
+        List<String> roles = StringUtils.hasText(credential.getRole())
+                ? Collections.singletonList(credential.getRole())
+                : Collections.emptyList();
+        String token = jwtService.generateToken(credential.getUsername(), roles);
         TokenResponse response = new TokenResponse(token, jwtService.getExpirationSeconds());
         return ResponseEntity.ok(response);
     }

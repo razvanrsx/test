@@ -6,16 +6,15 @@ This repository hosts a Java-based microservice system for an Energy Management 
 
 ```
 services/
-  authorization/    # Issues JWT tokens based on credential store
-  user/             # CRUD operations for platform users
-  device/           # CRUD operations for energy devices
-  api-gateway/      # Lightweight orchestrator forwarding requests to downstream services
+  authorization/    # Issues JWT tokens backed by a PostgreSQL credential store
+  user/             # CRUD operations for platform users persisted in PostgreSQL
+  device/           # CRUD operations for energy devices persisted in PostgreSQL
 frontend/           # Vite-powered SPA for user and device CRUD flows
 ```
 
 Supporting files:
 
-- `docker-compose.yml` – Launches the full stack with shared networking.
+- `docker-compose.yml` – Launches the full stack with Traefik and dedicated PostgreSQL instances.
 - `docs/` – Architectural notes and ready-to-use HTTP samples for manual testing.
 
 ## Getting started
@@ -30,23 +29,23 @@ Supporting files:
    docker compose up --build
    ```
    Exposed endpoints:
-   - API Gateway: `http://localhost:8083`
-   - Authorization service: `http://localhost:8080`
-   - User service: `http://localhost:8081`
-   - Device service: `http://localhost:8082`
+   - Traefik entrypoint: `http://localhost:8080`
+   - Authorization service (proxied): `http://localhost:8080/api/auth`
+   - User service (proxied): `http://localhost:8080/api/users`
+   - Device service (proxied): `http://localhost:8080/api/devices`
 
 3. **Obtain a JWT**
    ```bash
-   curl -X POST http://localhost:8080/auth/token \
+   curl -X POST http://localhost:8080/api/auth/token \
      -H "Content-Type: application/json" \
      -d '{"username": "admin", "password": "admin123"}'
    ```
    The response contains a signed JWT token valid for one hour.
 
-4. **Call downstream services through the gateway**
+4. **Call downstream services through Traefik**
    ```bash
-   curl http://localhost:8083/gateway/users
-   curl http://localhost:8083/gateway/devices
+   curl http://localhost:8080/api/users
+   curl http://localhost:8080/api/devices
    ```
 
 ## Frontend console
@@ -64,7 +63,7 @@ The `frontend/` directory contains a lightweight administrative console that sur
    npm run dev
    ```
 
-   The dev server runs on [http://localhost:5173](http://localhost:5173) and proxies API calls under `/api` to the gateway at `http://localhost:8083/gateway`. Make sure the backend services are running locally (via Docker Compose or IntelliJ) before using the UI.
+   The dev server runs on [http://localhost:5173](http://localhost:5173) and proxies API calls under `/api` to Traefik at `http://localhost:8080`. Make sure the backend services are running locally (via Docker Compose or IntelliJ) before using the UI.
 
 ### Production build
 
@@ -72,7 +71,7 @@ Set the API endpoint through the `VITE_API_BASE` environment variable and build 
 
 ```bash
 cd frontend
-VITE_API_BASE=http://localhost:8083/gateway npm run build
+VITE_API_BASE=http://localhost:8080/api npm run build
 ```
 
 The compiled assets are written to `frontend/dist/` and can be served through any static HTTP server.
@@ -82,8 +81,8 @@ The compiled assets are written to `frontend/dist/` and can be served through an
 Each microservice is a standalone Maven project:
 
 1. Open the repository folder in IntelliJ IDEA.
-2. Import Maven projects when prompted. IntelliJ detects the four services automatically.
-3. Use the Maven tool window or create Spring Boot run configurations for the `*ServiceApplication` classes.
+2. Import Maven projects when prompted. IntelliJ detects the three services automatically.
+3. Use the Maven tool window or create Spring Boot run configurations for the `*ServiceApplication` classes. Update `SPRING_DATASOURCE_*` environment variables in each configuration to point at a running PostgreSQL instance.
 4. Optionally configure a Docker Compose run configuration targeting `docker-compose.yml` for full-stack execution.
 
 ## Configuration
@@ -91,10 +90,10 @@ Each microservice is a standalone Maven project:
 Environment variables allow customizing service behavior:
 
 - `AUTH_JWT_SECRET` – Secret used to sign JWT tokens.
-- `AUTH_JWT_EXPIRATION_SECONDS` – Token lifetime.
-- `AUTH_SERVICE_URL`, `USER_SERVICE_URL`, `DEVICE_SERVICE_URL` – Override gateway targets.
+- `SPRING_DATASOURCE_URL`, `SPRING_DATASOURCE_USERNAME`, `SPRING_DATASOURCE_PASSWORD` – Override database connectivity per service.
+- `USER_SERVICE_URL`, `DEVICE_SERVICE_URL` – Allow the authorization service to call external user/device instances when running outside Docker.
 
-Default credentials and seed data are stored as JSON files inside each service under `src/main/resources/data/`.
+Default credentials and seed data are loaded via `data.sql` in each service and can be adjusted as needed.
 
 ## Testing the APIs
 

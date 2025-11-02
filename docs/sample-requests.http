@@ -1,5 +1,5 @@
-### Obtain a JWT token
-POST http://localhost:8080/auth/token
+### Obtain a JWT token through Traefik
+POST http://localhost:8080/api/auth/token
 Content-Type: application/json
 
 {
@@ -7,22 +7,22 @@ Content-Type: application/json
   "password": "admin123"
 }
 
-### List users via the gateway
-GET http://localhost:8083/gateway/users
+### List users
+GET http://localhost:8080/api/users
 
 ### Create a new user
-POST http://localhost:8081/users
+POST http://localhost:8080/api/users
 Content-Type: application/json
 
 {
   "username": "charlie",
   "password": "charlie123",
   "email": "charlie@example.com",
-  "role": "USER"
+  "role": "CLIENT"
 }
 
-### Create a device via the device service
-POST http://localhost:8082/devices
+### Create a device
+POST http://localhost:8080/api/devices
 Content-Type: application/json
 
 {
@@ -32,5 +32,5 @@ Content-Type: application/json
   "maxConsumption": 3.7
 }
 
-### Fetch all devices through the gateway
-GET http://localhost:8083/gateway/devices
+### Fetch all devices
+GET http://localhost:8080/api/devices
