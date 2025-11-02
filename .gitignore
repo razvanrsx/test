@@ -1,6 +1,10 @@
 # Maven
 **/target/
 
+# Node
+node_modules/
+frontend/dist/
+
 # IntelliJ IDEA
 .idea/
 *.iml

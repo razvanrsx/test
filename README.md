@@ -10,6 +10,7 @@ services/
   user/             # CRUD operations for platform users
   device/           # CRUD operations for energy devices
   api-gateway/      # Lightweight orchestrator forwarding requests to downstream services
+frontend/           # Vite-powered SPA for user and device CRUD flows
 ```
 
 Supporting files:
@@ -47,6 +48,34 @@ Supporting files:
    curl http://localhost:8083/gateway/users
    curl http://localhost:8083/gateway/devices
    ```
+
+## Frontend console
+
+The `frontend/` directory contains a lightweight administrative console that surfaces CRUD operations for users and devices.
+
+### Development server
+
+1. Install Node.js 18+.
+2. Install dependencies and start Vite:
+
+   ```bash
+   cd frontend
+   npm install
+   npm run dev
+   ```
+
+   The dev server runs on [http://localhost:5173](http://localhost:5173) and proxies API calls under `/api` to the gateway at `http://localhost:8083/gateway`. Make sure the backend services are running locally (via Docker Compose or IntelliJ) before using the UI.
+
+### Production build
+
+Set the API endpoint through the `VITE_API_BASE` environment variable and build the static assets:
+
+```bash
+cd frontend
+VITE_API_BASE=http://localhost:8083/gateway npm run build
+```
+
+The compiled assets are written to `frontend/dist/` and can be served through any static HTTP server.
 
 ## Running in IntelliJ IDEA
 

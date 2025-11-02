@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Microservices Console</title>
+  </head>
+  <body>
+    <div id="app">
+      <header>
+        <h1>Device Platform Admin</h1>
+        <p class="subtitle">Manage users and devices exposed by the Spring Boot microservices stack.</p>
+      </header>
+      <main>
+        <section id="login-section" class="card">
+          <h2>Authentication</h2>
+          <form id="login-form">
+            <div class="field">
+              <label for="login-username">Username</label>
+              <input id="login-username" name="username" autocomplete="username" required />
+            </div>
+            <div class="field">
+              <label for="login-password">Password</label>
+              <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+            </div>
+            <button type="submit">Sign in</button>
+            <p id="login-status" class="status"></p>
+          </form>
+        </section>
+
+        <section id="users-section" class="card">
+          <div class="section-heading">
+            <h2>Users</h2>
+            <button id="refresh-users" class="secondary">Refresh</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Role</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="users-table"></tbody>
+          </table>
+          <h3 id="user-form-title">Create user</h3>
+          <form id="user-form" class="split">
+            <input type="hidden" id="user-id" />
+            <div class="field">
+              <label for="user-name">Name</label>
+              <input id="user-name" required />
+            </div>
+            <div class="field">
+              <label for="user-email">Email</label>
+              <input id="user-email" type="email" required />
+            </div>
+            <div class="field">
+              <label for="user-role">Role</label>
+              <select id="user-role" required>
+                <option value="">Select role</option>
+                <option value="ADMIN">ADMIN</option>
+                <option value="CLIENT">CLIENT</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Save</button>
+              <button type="button" id="user-cancel" class="secondary">Cancel</button>
+            </div>
+            <p id="user-status" class="status"></p>
+          </form>
+        </section>
+
+        <section id="devices-section" class="card">
+          <div class="section-heading">
+            <h2>Devices</h2>
+            <button id="refresh-devices" class="secondary">Refresh</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="devices-table"></tbody>
+          </table>
+          <h3 id="device-form-title">Create device</h3>
+          <form id="device-form" class="split">
+            <input type="hidden" id="device-id" />
+            <div class="field">
+              <label for="device-name">Name</label>
+              <input id="device-name" required />
+            </div>
+            <div class="field">
+              <label for="device-type">Type</label>
+              <input id="device-type" required />
+            </div>
+            <div class="field">
+              <label for="device-status">Status</label>
+              <select id="device-status" required>
+                <option value="">Select status</option>
+                <option value="ONLINE">ONLINE</option>
+                <option value="OFFLINE">OFFLINE</option>
+                <option value="MAINTENANCE">MAINTENANCE</option>
+              </select>
+            </div>
+            <div class="form-actions">
+              <button type="submit">Save</button>
+              <button type="button" id="device-cancel" class="secondary">Cancel</button>
+            </div>
+            <p id="device-status-message" class="status"></p>
+          </form>
+        </section>
+      </main>
+    </div>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>
