@@ -21,6 +21,9 @@ public class Device {
     @Column(nullable = false)
     private Double maxConsumption;
 
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
+
     public Long getId() {
         return id;
     }
@@ -59,5 +62,13 @@ public class Device {
 
     public void setMaxConsumption(Double maxConsumption) {
         this.maxConsumption = maxConsumption;
+    }
+
+    public Long getUserId() {
+        return userId;
+    }
+
+    public void setUserId(Long userId) {
+        this.userId = userId;
     }
 }

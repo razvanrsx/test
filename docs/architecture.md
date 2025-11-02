@@ -19,13 +19,15 @@ flowchart TD
 - **Authorization Service** – Issues JWT tokens after validating credentials stored in PostgreSQL.
 - **Traefik** – Provides routing for `/api/auth`, `/api/users`, and `/api/devices`, stripping the `/api` prefix before forwarding the requests to the respective services.
 - **User Service** – Provides CRUD APIs for platform users backed by PostgreSQL.
-- **Device Service** – Provides CRUD APIs for devices and their metadata backed by PostgreSQL.
+- **Device Service** – Provides CRUD APIs for devices, including user ownership assignments, backed by PostgreSQL.
 
 Each service is packaged as a Docker image and exposes a REST interface. Traefik is the only component exposed to the public network; the other services communicate inside the Docker network.
 
 ## Data storage
 
 Every microservice owns its database schema. Docker Compose provisions three PostgreSQL instances—`authorization-db`, `user-db`, and `device-db`—so that data is persisted between restarts. Spring Boot initialises tables via JPA and seeds demo records through `data.sql` files.
+
+Device records store the owning user's identifier (`user_id`) so API consumers can fetch all devices or filter them per account.
 
 ## Security model
 

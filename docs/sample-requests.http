@@ -29,8 +29,12 @@ Content-Type: application/json
   "name": "Inverter",
   "type": "INVERTER",
   "status": "ACTIVE",
-  "maxConsumption": 3.7
+  "maxConsumption": 3.7,
+  "userId": 1
 }
 
 ### Fetch all devices
 GET http://localhost:8080/api/devices
+
+### Fetch devices by user
+GET http://localhost:8080/api/devices?userId=1

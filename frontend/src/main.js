@@ -23,6 +23,7 @@ const deviceFormTitle = document.getElementById('device-form-title');
 const deviceStatus = document.getElementById('device-status-message');
 const deviceCancelButton = document.getElementById('device-cancel');
 const refreshDevicesButton = document.getElementById('refresh-devices');
+const deviceUserSelect = document.getElementById('device-user');
 
 function setStatus(element, message, type) {
   if (!element) return;
@@ -129,6 +130,8 @@ async function loadUsers() {
     const users = await request('/users');
     state.users = users;
     renderUsers();
+    updateDeviceUserOptions();
+    renderDevices();
     setStatus(userStatus, `Loaded ${users.length} users.`, 'success');
   } catch (error) {
     setStatus(userStatus, error.message, 'error');
@@ -175,18 +178,21 @@ function renderUsers() {
 function renderDevices() {
   devicesTable.innerHTML = '';
   if (!state.devices.length) {
-    devicesTable.innerHTML = '<tr><td colspan="6">No devices found.</td></tr>';
+    devicesTable.innerHTML = '<tr><td colspan="7">No devices found.</td></tr>';
     return;
   }
 
   for (const device of state.devices) {
     const row = document.createElement('tr');
+    const owner = state.users.find((user) => user.id === device.userId);
+    const ownerLabel = owner ? owner.username : (device.userId ?? '');
     row.innerHTML = `
       <td>${device.id ?? ''}</td>
       <td>${escapeHtml(device.name)}</td>
       <td>${escapeHtml(device.type)}</td>
       <td>${escapeHtml(device.status)}</td>
       <td>${device.maxConsumption != null ? escapeHtml(device.maxConsumption) : ''}</td>
+      <td>${escapeHtml(ownerLabel)}</td>
       <td>
         <div class="actions">
           <button type="button" class="secondary edit-device" data-id="${device.id}">Edit</button>
@@ -312,13 +318,15 @@ deviceForm.addEventListener('submit', async (event) => {
   const status = document.getElementById('device-status').value;
   const maxConsumptionValue = document.getElementById('device-max-consumption').value;
   const maxConsumption = maxConsumptionValue ? Number(maxConsumptionValue) : null;
+  const userIdValue = deviceUserSelect.value;
+  const userId = userIdValue ? Number(userIdValue) : null;
 
-  if (!name || !type || !status || maxConsumption === null || Number.isNaN(maxConsumption)) {
-    setStatus(deviceStatus, 'Name, type, status, and max consumption are required.', 'error');
+  if (!name || !type || !status || maxConsumption === null || Number.isNaN(maxConsumption) || userId === null) {
+    setStatus(deviceStatus, 'Name, type, status, max consumption, and user are required.', 'error');
     return;
   }
 
-  const payload = { name, type, status, maxConsumption };
+  const payload = { name, type, status, maxConsumption, userId };
   const method = id ? 'PUT' : 'POST';
   const path = id ? `/devices/${id}` : '/devices';
   if (id) {
@@ -357,6 +365,7 @@ function fillDeviceForm(device) {
   document.getElementById('device-status').value = device.status ?? '';
   document.getElementById('device-max-consumption').value =
     device.maxConsumption != null ? device.maxConsumption : '';
+  updateDeviceUserOptions(device.userId ?? '');
   deviceFormTitle.textContent = 'Edit device';
 }
 
@@ -370,7 +379,41 @@ function resetUserForm() {
 function resetDeviceForm() {
   deviceForm.reset();
   document.getElementById('device-id').value = '';
+  updateDeviceUserOptions('');
   deviceFormTitle.textContent = 'Create device';
+}
+
+function updateDeviceUserOptions(selectedId) {
+  if (!deviceUserSelect) {
+    return;
+  }
+
+  const currentValue =
+    selectedId !== undefined
+      ? selectedId === null
+        ? ''
+        : String(selectedId)
+      : deviceUserSelect.value;
+
+  const options = ['<option value="">Select user</option>'];
+  for (const user of state.users) {
+    const value = escapeHtml(String(user.id));
+    options.push(`<option value="${value}">${escapeHtml(user.username)}</option>`);
+  }
+
+  const normalizedValue =
+    currentValue === undefined || currentValue === null ? '' : String(currentValue);
+  const sanitizedValue = escapeHtml(normalizedValue);
+
+  const hasMatchingUser =
+    normalizedValue !== '' && state.users.some((user) => String(user.id) === normalizedValue);
+
+  if (normalizedValue !== '' && !hasMatchingUser) {
+    options.push(`<option value="${sanitizedValue}">User #${escapeHtml(normalizedValue)}</option>`);
+  }
+
+  deviceUserSelect.innerHTML = options.join('');
+  deviceUserSelect.value = sanitizedValue;
 }
 
 // Attempt to load initial data when the page loads.

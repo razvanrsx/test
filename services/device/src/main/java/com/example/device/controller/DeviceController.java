@@ -21,7 +21,10 @@ public class DeviceController {
     }
 
     @GetMapping
-    public List<Device> getAll() {
+    public List<Device> getAll(@RequestParam(name = "userId", required = false) Long userId) {
+        if (userId != null) {
+            return deviceRepository.findByUserId(userId);
+        }
         return deviceRepository.findAll();
     }
 
@@ -55,6 +58,7 @@ public class DeviceController {
         toUpdate.setType(device.getType());
         toUpdate.setStatus(device.getStatus());
         toUpdate.setMaxConsumption(device.getMaxConsumption());
+        toUpdate.setUserId(device.getUserId());
         Device saved = deviceRepository.save(toUpdate);
         return ResponseEntity.ok(saved);
     }
@@ -73,6 +77,8 @@ public class DeviceController {
                 && StringUtils.hasText(device.getName())
                 && StringUtils.hasText(device.getType())
                 && StringUtils.hasText(device.getStatus())
-                && device.getMaxConsumption() != null;
+                && device.getMaxConsumption() != null
+                && device.getUserId() != null
+                && device.getUserId() > 0;
     }
 }

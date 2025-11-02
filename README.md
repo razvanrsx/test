@@ -8,7 +8,7 @@ This repository hosts a Java-based microservice system for an Energy Management 
 services/
   authorization/    # Issues JWT tokens backed by a PostgreSQL credential store
   user/             # CRUD operations for platform users persisted in PostgreSQL
-  device/           # CRUD operations for energy devices persisted in PostgreSQL
+  device/           # CRUD operations for energy devices and ownership assignments persisted in PostgreSQL
 frontend/           # Vite-powered SPA for user and device CRUD flows
 ```
 
@@ -46,11 +46,14 @@ Supporting files:
    ```bash
    curl http://localhost:8080/api/users
    curl http://localhost:8080/api/devices
+   curl http://localhost:8080/api/devices?userId=1
    ```
 
 ## Frontend console
 
 The `frontend/` directory contains a lightweight administrative console that surfaces CRUD operations for users and devices.
+
+Device forms allow selecting an owning user so each device is associated with an account. The devices table surfaces the username alongside device metadata.
 
 ### Development server
 
