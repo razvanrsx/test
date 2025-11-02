@@ -70,3 +70,22 @@ Default credentials and seed data are stored as JSON files inside each service u
 ## Testing the APIs
 
 The `docs/sample-requests.http` file contains sample HTTP requests that can be used with the IntelliJ HTTP client or VS Code REST Client extension. Update hostnames/ports as needed when running the services outside Docker Compose.
+
+## Publishing to GitHub
+
+To upload this project to your own GitHub repository:
+
+1. [Create an empty repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository) in your GitHub account. Skip the option to add a README or license so that the repository stays empty.
+2. Add GitHub as a new remote:
+   ```bash
+   git remote add origin git@github.com:<your-account>/<your-repo>.git
+   # or use https if you prefer
+   # git remote add origin https://github.com/<your-account>/<your-repo>.git
+   ```
+3. Push the current branch (named `work`) to GitHub:
+   ```bash
+   git push -u origin work
+   ```
+4. If you later create additional branches, push them with `git push -u origin <branch-name>` and open pull requests from the GitHub UI.
+
+These commands require that you have already configured your GitHub credentials (SSH keys or HTTPS token) in your development environment.
