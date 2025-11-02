@@ -1,5 +1,7 @@
 package com.example.user.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+
 public class User {
     private Integer id;
     private String username;
@@ -19,6 +21,7 @@ public class User {
         return username;
     }
 
+    @JsonAlias("name")
     public void setUsername(String username) {
         this.username = username;
     }
