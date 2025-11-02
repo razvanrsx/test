@@ -7,14 +7,19 @@ import com.example.gateway.model.TokenResponse;
 import com.example.gateway.model.UserSummary;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.util.StringUtils;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/gateway")
@@ -49,13 +54,16 @@ public class GatewayController {
     @PostMapping("/users")
     public ResponseEntity<UserSummary> createUser(@RequestBody UserSummary user) {
         String url = properties.getUser().getUrl() + "/users";
-        return exchange(url, HttpMethod.POST, user, UserSummary.class);
+        Map<String, Object> payload = buildUserPayload(user, true);
+        return exchange(url, HttpMethod.POST, payload, UserSummary.class);
     }
 
     @PutMapping("/users/{id}")
     public ResponseEntity<UserSummary> updateUser(@PathVariable Integer id, @RequestBody UserSummary user) {
         String url = properties.getUser().getUrl() + "/users/" + id;
-        return exchange(url, HttpMethod.PUT, user, UserSummary.class);
+        boolean includePassword = StringUtils.hasText(user.getPassword());
+        Map<String, Object> payload = buildUserPayload(user, includePassword);
+        return exchange(url, HttpMethod.PUT, payload, UserSummary.class);
     }
 
     @DeleteMapping("/users/{id}")
@@ -96,7 +104,7 @@ public class GatewayController {
 
     private <T> ResponseEntity<T> exchange(String url, HttpMethod method, Object body, Class<T> responseType) {
         try {
-            HttpEntity<Object> requestEntity = body == null ? HttpEntity.EMPTY : new HttpEntity<>(body);
+            HttpEntity<?> requestEntity = createJsonEntity(body);
             ResponseEntity<T> response = restTemplate.exchange(url, method, requestEntity, responseType);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (RestClientResponseException ex) {
@@ -106,12 +114,32 @@ public class GatewayController {
 
     private <T> ResponseEntity<T> exchange(String url, HttpMethod method, Object body, ParameterizedTypeReference<T> typeReference) {
         try {
-            HttpEntity<Object> requestEntity = body == null ? HttpEntity.EMPTY : new HttpEntity<>(body);
+            HttpEntity<?> requestEntity = createJsonEntity(body);
             ResponseEntity<T> response = restTemplate.exchange(url, method, requestEntity, typeReference);
             return ResponseEntity.status(response.getStatusCode()).body(response.getBody());
         } catch (RestClientResponseException ex) {
             return ResponseEntity.status(ex.getStatusCode()).build();
         }
+    }
+
+    private HttpEntity<?> createJsonEntity(Object body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        if (body == null) {
+            return new HttpEntity<>(headers);
+        }
+        return new HttpEntity<>(body, headers);
+    }
+
+    private Map<String, Object> buildUserPayload(UserSummary user, boolean includePassword) {
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("name", user.getUsername());
+        payload.put("email", user.getEmail());
+        payload.put("role", user.getRole());
+        if (includePassword) {
+            payload.put("password", user.getPassword());
+        }
+        return payload;
     }
 
     private ResponseEntity<Void> exchangeDelete(String url) {
