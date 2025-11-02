@@ -8,6 +8,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -35,23 +36,33 @@ public class DeviceController {
     }
 
     @PostMapping
-    public ResponseEntity<Device> create(@RequestBody Device device) {
+    public ResponseEntity<?> create(@RequestBody Device device) {
         if (!isValid(device)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return error(HttpStatus.BAD_REQUEST, "Name, type, status, max consumption, and user are required.");
         }
+
+        if (deviceRepository.findByNameIgnoreCase(device.getName()).isPresent()) {
+            return error(HttpStatus.CONFLICT, "A device with this name already exists. Choose a different name.");
+        }
+
         device.setId(null);
         Device saved = deviceRepository.save(device);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Device> update(@PathVariable Long id, @RequestBody Device device) {
+    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Device device) {
         Optional<Device> existingDevice = deviceRepository.findById(id);
         if (existingDevice.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
         if (!isValid(device)) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+            return error(HttpStatus.BAD_REQUEST, "Name, type, status, max consumption, and user are required.");
+        }
+
+        Optional<Device> duplicate = deviceRepository.findByNameIgnoreCase(device.getName());
+        if (duplicate.isPresent() && !duplicate.get().getId().equals(id)) {
+            return error(HttpStatus.CONFLICT, "A device with this name already exists. Choose a different name.");
         }
         Device toUpdate = existingDevice.get();
         toUpdate.setName(device.getName());
@@ -80,5 +91,9 @@ public class DeviceController {
                 && device.getMaxConsumption() != null
                 && device.getUserId() != null
                 && device.getUserId() > 0;
+    }
+
+    private ResponseEntity<Map<String, String>> error(HttpStatus status, String message) {
+        return ResponseEntity.status(status).body(Map.of("message", message));
     }
 }
