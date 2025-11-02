@@ -8,3 +8,7 @@ spring:
 logging:
   level:
     root: INFO
+
+services:
+  user:
+    url: ${USER_SERVICE_URL:http://user-service:8081}

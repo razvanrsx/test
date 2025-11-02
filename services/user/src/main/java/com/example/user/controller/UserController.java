@@ -31,6 +31,16 @@ public class UserController {
         return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @GetMapping("/search")
+    public ResponseEntity<User> findByUsername(@RequestParam String username) {
+        if (!StringUtils.hasText(username)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+        return userRepository.findByUsername(username)
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).build());
+    }
+
     @PostMapping
     public ResponseEntity<User> create(@RequestBody User user) {
         if (!StringUtils.hasText(user.getUsername()) || !StringUtils.hasText(user.getPassword())) {

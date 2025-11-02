@@ -58,6 +58,15 @@ public class UserRepository {
         return Optional.ofNullable(users.get(id));
     }
 
+    public Optional<User> findByUsername(String username) {
+        if (username == null) {
+            return Optional.empty();
+        }
+        return users.values().stream()
+                .filter(user -> username.equalsIgnoreCase(user.getUsername()))
+                .findFirst();
+    }
+
     public User save(User user) {
         if (user.getId() == null) {
             user.setId(sequence.incrementAndGet());
