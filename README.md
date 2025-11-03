@@ -30,6 +30,7 @@ Supporting files:
    ```
    Exposed endpoints:
    - Traefik entrypoint: `http://localhost:8080`
+   - Frontend console (served via Traefik): `http://localhost:8080/`
    - Authorization service (proxied): `http://localhost:8080/api/auth`
    - User service (proxied): `http://localhost:8080/api/users`
    - Device service (proxied): `http://localhost:8080/api/devices`
@@ -54,6 +55,10 @@ Supporting files:
 The `frontend/` directory contains a lightweight administrative console that surfaces CRUD operations for users and devices.
 
 Device forms allow selecting an owning user so each device is associated with an account. The devices table surfaces the username alongside device metadata.
+
+### Running via Docker Compose
+
+When the stack is started with `docker compose up --build`, the frontend is built into a static bundle and served through an Nginx container behind Traefik. Visit [http://localhost:8080/](http://localhost:8080/) to access the UI.
 
 ### Development server
 

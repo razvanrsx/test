@@ -25,6 +25,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.authorization.rule=PathPrefix(`/api/auth`)"
       - "traefik.http.routers.authorization.entrypoints=web"
+      - "traefik.http.routers.authorization.priority=10"
       - "traefik.http.middlewares.authorization-strip.stripPrefix.prefixes=/api"
       - "traefik.http.routers.authorization.middlewares=authorization-strip"
       - "traefik.http.services.authorization.loadbalancer.server.port=8080"
@@ -50,6 +51,7 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
       - "traefik.http.routers.users.entrypoints=web"
+      - "traefik.http.routers.users.priority=10"
       - "traefik.http.middlewares.users-strip.stripPrefix.prefixes=/api"
       - "traefik.http.routers.users.middlewares=users-strip"
       - "traefik.http.services.users.loadbalancer.server.port=8081"
@@ -75,9 +77,23 @@ services:
       - "traefik.enable=true"
       - "traefik.http.routers.devices.rule=PathPrefix(`/api/devices`)"
       - "traefik.http.routers.devices.entrypoints=web"
+      - "traefik.http.routers.devices.priority=10"
       - "traefik.http.middlewares.devices-strip.stripPrefix.prefixes=/api"
       - "traefik.http.routers.devices.middlewares=devices-strip"
       - "traefik.http.services.devices.loadbalancer.server.port=8082"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - authorization-service
+      - user-service
+      - device-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
   device-db:
     image: postgres:15
