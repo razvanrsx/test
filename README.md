@@ -103,6 +103,25 @@ Environment variables allow customizing service behavior:
 
 Default credentials and seed data are loaded via `data.sql` in each service and can be adjusted as needed.
 
+## Accessing the databases
+
+Each microservice persists its data in its own PostgreSQL container defined in `docker-compose.yml`. After starting the stack with `docker compose up --build`, connect with the built-in `psql` client from your host by executing the command inside the corresponding container:
+
+```bash
+# Authorization credentials database
+docker compose exec authorization-db psql -U auth_user -d authorization
+
+# User profile database
+docker compose exec user-db psql -U user_user -d users
+
+# Device catalog database
+docker compose exec device-db psql -U device_user -d devices
+```
+
+The commands above open interactive shells where you can run SQL queries (e.g., `\dt` to list tables or `SELECT * FROM users;`). When you are done, exit the session with `\q`.
+
+If you prefer connecting from an external SQL client, expose the PostgreSQL ports by adding temporary port mappings in `docker-compose.yml` (for example `5432:5432` on `authorization-db`) or by using `docker compose port authorization-db 5432` to discover the ephemeral host port that Docker assigned.
+
 ## Testing the APIs
 
 The `docs/sample-requests.http` file contains sample HTTP requests that can be used with the IntelliJ HTTP client or VS Code REST Client extension. Update hostnames/ports as needed when running the services outside Docker Compose.
