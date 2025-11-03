@@ -38,3 +38,9 @@ GET http://localhost:8080/api/devices
 
 ### Fetch devices by user
 GET http://localhost:8080/api/devices?userId=1
+
+### Swagger UI (Authorization service)
+GET http://localhost:8080/api/auth/swagger-ui/index.html
+
+### OpenAPI JSON (Device service)
+GET http://localhost:8080/api/devices/v3/api-docs

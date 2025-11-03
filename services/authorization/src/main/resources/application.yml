@@ -19,6 +19,11 @@ spring:
     init:
       mode: always
       continue-on-error: true
+springdoc:
+  swagger-ui:
+    path: /auth/swagger-ui
+  api-docs:
+    path: /auth/v3/api-docs
 
 services:
   user:

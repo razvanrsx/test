@@ -34,6 +34,8 @@ Supporting files:
    - Authorization service (proxied): `http://localhost:8080/api/auth`
    - User service (proxied): `http://localhost:8080/api/users`
    - Device service (proxied): `http://localhost:8080/api/devices`
+   - Swagger UIs: `http://localhost:8080/api/auth/swagger-ui/index.html`, `http://localhost:8080/api/users/swagger-ui/index.html`, `http://localhost:8080/api/devices/swagger-ui/index.html`
+   - OpenAPI documents: `http://localhost:8080/api/auth/v3/api-docs`, `http://localhost:8080/api/users/v3/api-docs`, `http://localhost:8080/api/devices/v3/api-docs`
 
 3. **Obtain a JWT**
    ```bash

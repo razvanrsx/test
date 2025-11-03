@@ -2,6 +2,12 @@ package com.example.device.controller;
 
 import com.example.device.model.Device;
 import com.example.device.repository.DeviceRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.util.StringUtils;
@@ -13,6 +19,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/devices")
+@Tag(name = "Devices", description = "Device CRUD operations")
 public class DeviceController {
 
     private final DeviceRepository deviceRepository;
@@ -22,7 +29,14 @@ public class DeviceController {
     }
 
     @GetMapping
-    public List<Device> getAll(@RequestParam(name = "userId", required = false) Long userId) {
+    @Operation(
+            summary = "List devices",
+            description = "Returns all devices or those filtered by owning user.",
+            responses = {@ApiResponse(responseCode = "200", description = "Devices retrieved")}
+    )
+    public List<Device> getAll(
+            @Parameter(description = "Optional user filter")
+            @RequestParam(name = "userId", required = false) Long userId) {
         if (userId != null) {
             return deviceRepository.findByUserId(userId);
         }
@@ -30,13 +44,36 @@ public class DeviceController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Device> getById(@PathVariable Long id) {
+    @Operation(
+            summary = "Get device by id",
+            description = "Fetch a device by identifier.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Device found"),
+                    @ApiResponse(responseCode = "404", description = "Device not found")
+            }
+    )
+    public ResponseEntity<Device> getById(@Parameter(description = "Device identifier") @PathVariable Long id) {
         Optional<Device> device = deviceRepository.findById(id);
         return device.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody Device device) {
+    @Operation(
+            summary = "Create device",
+            description = "Registers a new device and assigns it to a user.",
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Device created"),
+                    @ApiResponse(responseCode = "400", description = "Validation error"),
+                    @ApiResponse(responseCode = "409", description = "Duplicate device name")
+            }
+    )
+    public ResponseEntity<?> create(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Device payload",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = Device.class))
+            )
+            @RequestBody Device device) {
         if (!isValid(device)) {
             return error(HttpStatus.BAD_REQUEST, "Name, type, status, max consumption, and user are required.");
         }
@@ -51,7 +88,24 @@ public class DeviceController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> update(@PathVariable Long id, @RequestBody Device device) {
+    @Operation(
+            summary = "Update device",
+            description = "Updates device attributes and ownership.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Device updated"),
+                    @ApiResponse(responseCode = "400", description = "Validation error"),
+                    @ApiResponse(responseCode = "404", description = "Device not found"),
+                    @ApiResponse(responseCode = "409", description = "Duplicate device name")
+            }
+    )
+    public ResponseEntity<?> update(
+            @Parameter(description = "Device identifier") @PathVariable Long id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Updated device payload",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = Device.class))
+            )
+            @RequestBody Device device) {
         Optional<Device> existingDevice = deviceRepository.findById(id);
         if (existingDevice.isEmpty()) {
             return ResponseEntity.notFound().build();
@@ -75,7 +129,15 @@ public class DeviceController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> delete(@PathVariable Long id) {
+    @Operation(
+            summary = "Delete device",
+            description = "Deletes a device by identifier.",
+            responses = {
+                    @ApiResponse(responseCode = "204", description = "Device deleted"),
+                    @ApiResponse(responseCode = "404", description = "Device not found")
+            }
+    )
+    public ResponseEntity<Void> delete(@Parameter(description = "Device identifier") @PathVariable Long id) {
         if (!deviceRepository.existsById(id)) {
             return ResponseEntity.notFound().build();
         }

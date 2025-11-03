@@ -19,3 +19,8 @@ spring:
     init:
       mode: always
       continue-on-error: true
+springdoc:
+  swagger-ui:
+    path: /users/swagger-ui
+  api-docs:
+    path: /users/v3/api-docs

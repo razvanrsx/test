@@ -6,6 +6,11 @@ import com.example.authorization.model.TokenResponse;
 import com.example.authorization.model.UserRecord;
 import com.example.authorization.repository.CredentialRepository;
 import com.example.authorization.service.JwtService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -27,6 +32,7 @@ import java.util.Optional;
 
 @RestController
 @RequestMapping("/auth")
+@Tag(name = "Authentication", description = "JWT token issuance")
 public class AuthController {
     private static final Logger logger = LoggerFactory.getLogger(AuthController.class);
 
@@ -46,7 +52,23 @@ public class AuthController {
     }
 
     @PostMapping("/token")
-    public ResponseEntity<TokenResponse> login(@RequestBody LoginRequest request) {
+    @Operation(
+            summary = "Authenticate user",
+            description = "Validates credentials and returns a signed JWT token.",
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Token issued",
+                            content = @Content(schema = @Schema(implementation = TokenResponse.class))),
+                    @ApiResponse(responseCode = "400", description = "Missing credentials"),
+                    @ApiResponse(responseCode = "401", description = "Invalid username or password")
+            }
+    )
+    public ResponseEntity<TokenResponse> login(
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Login request",
+                    required = true,
+                    content = @Content(schema = @Schema(implementation = LoginRequest.class))
+            )
+            @RequestBody LoginRequest request) {
         if (request.getUsername() == null || request.getPassword() == null) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

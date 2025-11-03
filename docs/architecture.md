@@ -20,6 +20,7 @@ flowchart TD
 - **Traefik** – Provides routing for `/api/auth`, `/api/users`, and `/api/devices`, stripping the `/api` prefix before forwarding the requests to the respective services.
 - **User Service** – Provides CRUD APIs for platform users backed by PostgreSQL.
 - **Device Service** – Provides CRUD APIs for devices, including user ownership assignments, backed by PostgreSQL.
+- **Swagger/OpenAPI** – Each service exposes interactive documentation under `/api/<service>/swagger-ui/index.html` and machine-readable specs under `/api/<service>/v3/api-docs` (e.g., `/api/users/swagger-ui/index.html`).
 
 Each service is packaged as a Docker image and exposes a REST interface. Traefik is the only component exposed to the public network; the other services communicate inside the Docker network.
 
