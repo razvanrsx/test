@@ -68,9 +68,8 @@ When the stack is started with `docker compose up --build`, the frontend is buil
 2. Install dependencies and start Vite:
 
    ```bash
-   cd frontend
-   npm install
-   npm run dev
+   npm --prefix frontend install
+   npm --prefix frontend run dev
    ```
 
    The dev server runs on [http://localhost:5173](http://localhost:5173) and proxies API calls under `/api` to Traefik at `http://localhost:8080`. Make sure the backend services are running locally (via Docker Compose or IntelliJ) before using the UI.
@@ -80,8 +79,7 @@ When the stack is started with `docker compose up --build`, the frontend is buil
 Set the API endpoint through the `VITE_API_BASE` environment variable and build the static assets:
 
 ```bash
-cd frontend
-VITE_API_BASE=http://localhost:8080/api npm run build
+VITE_API_BASE=http://localhost:8080/api npm --prefix frontend run build
 ```
 
 The compiled assets are written to `frontend/dist/` and can be served through any static HTTP server.
@@ -128,21 +126,3 @@ If you prefer connecting from an external SQL client, expose the PostgreSQL port
 
 The `docs/sample-requests.http` file contains sample HTTP requests that can be used with the IntelliJ HTTP client or VS Code REST Client extension. Update hostnames/ports as needed when running the services outside Docker Compose.
 
-## Publishing to GitHub
-
-To upload this project to your own GitHub repository:
-
-1. [Create an empty repository](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-new-repository) in your GitHub account. Skip the option to add a README or license so that the repository stays empty.
-2. Add GitHub as a new remote:
-   ```bash
-   git remote add origin git@github.com:<your-account>/<your-repo>.git
-   # or use https if you prefer
-   # git remote add origin https://github.com/<your-account>/<your-repo>.git
-   ```
-3. Push the current branch (named `work`) to GitHub:
-   ```bash
-   git push -u origin work
-   ```
-4. If you later create additional branches, push them with `git push -u origin <branch-name>` and open pull requests from the GitHub UI.
-
-These commands require that you have already configured your GitHub credentials (SSH keys or HTTPS token) in your development environment.
