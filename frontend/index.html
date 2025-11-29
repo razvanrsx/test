@@ -9,7 +9,6 @@
     <div id="app">
       <header>
         <h1>Device Platform Admin</h1>
-        <p class="subtitle">Manage users and devices exposed by the Spring Boot microservices stack.</p>
         <p id="session-summary" class="status muted"></p>
       </header>
       <main>
@@ -26,6 +25,27 @@
             </div>
             <button type="submit">Sign in</button>
             <p id="login-status" class="status"></p>
+          </form>
+        </section>
+
+        <section id="register-section" class="card">
+          <h2>Register</h2>
+          <p class="muted">Create a CLIENT account to sign in and view your devices.</p>
+          <form id="register-form">
+            <div class="field">
+              <label for="register-username">Username</label>
+              <input id="register-username" name="username" autocomplete="username" required />
+            </div>
+            <div class="field">
+              <label for="register-email">Email</label>
+              <input id="register-email" name="email" type="email" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="register-password">Password</label>
+              <input id="register-password" name="password" type="password" autocomplete="new-password" required />
+            </div>
+            <button type="submit">Create account</button>
+            <p id="register-status" class="status"></p>
           </form>
         </section>
 

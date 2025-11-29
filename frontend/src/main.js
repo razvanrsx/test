@@ -13,6 +13,8 @@ const state = {
 const loginForm = document.getElementById('login-form');
 const loginStatus = document.getElementById('login-status');
 const sessionSummary = document.getElementById('session-summary');
+const registerForm = document.getElementById('register-form');
+const registerStatus = document.getElementById('register-status');
 const usersTable = document.getElementById('users-table');
 const userForm = document.getElementById('user-form');
 const userFormTitle = document.getElementById('user-form-title');
@@ -21,6 +23,7 @@ const userCancelButton = document.getElementById('user-cancel');
 const usersSection = document.getElementById('users-section');
 const usersActionsHeader = document.getElementById('users-actions-header');
 const refreshUsersButton = document.getElementById('refresh-users');
+const devicesSection = document.getElementById('devices-section');
 const devicesTable = document.getElementById('devices-table');
 const deviceForm = document.getElementById('device-form');
 const deviceFormTitle = document.getElementById('device-form-title');
@@ -75,26 +78,42 @@ function updateSessionSummary() {
 }
 
 function applyRoleVisibility() {
+  const signedIn = Boolean(state.token);
+
   if (usersSection) {
-    usersSection.classList.toggle('hidden', !isAdmin());
+    usersSection.classList.toggle('hidden', !signedIn || !isAdmin());
   }
   if (usersActionsHeader) {
-    usersActionsHeader.classList.toggle('hidden', !isAdmin());
+    usersActionsHeader.classList.toggle('hidden', !signedIn || !isAdmin());
+  }
+  if (userFormTitle) {
+    userFormTitle.classList.toggle('hidden', !signedIn || !isAdmin());
+  }
+  if (userForm) {
+    userForm.classList.toggle('hidden', !signedIn || !isAdmin());
+  }
+
+  if (devicesSection) {
+    devicesSection.classList.toggle('hidden', !signedIn);
   }
   if (deviceFormTitle) {
-    deviceFormTitle.classList.toggle('hidden', !isAdmin());
+    deviceFormTitle.classList.toggle('hidden', !signedIn || !isAdmin());
   }
   if (deviceForm) {
-    deviceForm.classList.toggle('hidden', !isAdmin());
+    deviceForm.classList.toggle('hidden', !signedIn || !isAdmin());
   }
   if (devicesActionsHeader) {
-    devicesActionsHeader.classList.toggle('hidden', !isAdmin());
+    devicesActionsHeader.classList.toggle('hidden', !signedIn || !isAdmin());
   }
 }
 
 function setCurrentUserFromToken(token) {
   if (!token) {
     state.currentUser = null;
+    state.users = [];
+    state.devices = [];
+    renderUsers();
+    renderDevices();
     updateSessionSummary();
     applyRoleVisibility();
     return;
@@ -221,6 +240,10 @@ refreshDevicesButton.addEventListener('click', async () => {
 });
 
 async function loadUsers() {
+  if (!state.token) {
+    setStatus(userStatus, 'Sign in to load users.', 'error');
+    return;
+  }
   setStatus(userStatus, 'Loading users…');
   try {
     const users = await request('/users');
@@ -237,6 +260,10 @@ async function loadUsers() {
 }
 
 async function loadDevices() {
+  if (!state.token) {
+    setStatus(deviceStatus, 'Sign in to load devices.', 'error');
+    return;
+  }
   setStatus(deviceStatus, 'Loading devices…');
   try {
     let path = '/devices';
@@ -456,6 +483,37 @@ deviceCancelButton.addEventListener('click', () => {
   setStatus(deviceStatus, '');
 });
 
+registerForm?.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const username = document.getElementById('register-username').value.trim();
+  const email = document.getElementById('register-email').value.trim();
+  const password = document.getElementById('register-password').value;
+
+  if (!username || !email || !password) {
+    setStatus(registerStatus, 'Username, email, and password are required.', 'error');
+    return;
+  }
+
+  const payload = { username, email, password, role: 'CLIENT' };
+  setStatus(registerStatus, 'Creating account…');
+  try {
+    await request('/users', { method: 'POST', body: payload });
+    setStatus(registerStatus, 'Account created. Signing you in…', 'success');
+
+    const loginResult = await request('/auth/token', {
+      method: 'POST',
+      body: { username, password }
+    });
+
+    updateAuthState(loginResult.token, loginResult.expiresIn);
+    setStatus(loginStatus, 'Signed in after registration.', 'success');
+    await loadUsers();
+    await loadDevices();
+  } catch (error) {
+    setStatus(registerStatus, error.message || 'Registration failed.', 'error');
+  }
+});
+
 function fillUserForm(user) {
   document.getElementById('user-id').value = user.id ?? '';
   document.getElementById('user-username').value = user.username ?? '';
@@ -523,12 +581,6 @@ function updateDeviceUserOptions(selectedId) {
   deviceUserSelect.value = sanitizedValue;
 }
 
-// Attempt to load initial data when the page loads.
+// Initialize session banner and role-based visibility without preloading data.
 updateSessionSummary();
-loadUsers().catch(() => {
-  setStatus(userStatus, 'Sign in and click Refresh to load users.', 'error');
-});
-
-loadDevices().catch(() => {
-  setStatus(deviceStatus, 'Sign in and click Refresh to load devices.', 'error');
-});
+applyRoleVisibility();

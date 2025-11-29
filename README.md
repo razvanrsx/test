@@ -54,8 +54,9 @@ Supporting files:
 
 ## Frontend console
 
-The `frontend/` directory contains a lightweight administrative console that surfaces CRUD operations for users and devices.
+The `frontend/` directory contains a lightweight administrative console that surfaces CRUD operations for users and devices. Data tables stay hidden until you sign in, so the landing experience only shows the sign-in and registration cards.
 
+- **Registration** is open to everyone via the Register card; newly created accounts default to the CLIENT role and can sign in immediately.
 - **Admins** can create, edit, and delete users and devices. The Users section and device edit actions remain visible for ADMIN logins.
 - **Clients** see a read-only view filtered to their own devices (matched by username/userId) and cannot manage user accounts or modify devices.
 
