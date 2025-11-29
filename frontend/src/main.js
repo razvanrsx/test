@@ -7,6 +7,7 @@ const state = {
   tokenExpiresAt: null,
   users: [],
   devices: [],
+  monitoring: [],
   currentUser: null,
   authView: 'login'
 };
@@ -37,6 +38,11 @@ const deviceCancelButton = document.getElementById('device-cancel');
 const devicesActionsHeader = document.getElementById('devices-actions-header');
 const refreshDevicesButton = document.getElementById('refresh-devices');
 const deviceUserSelect = document.getElementById('device-user');
+const monitoringSection = document.getElementById('monitoring-section');
+const monitoringTable = document.getElementById('monitoring-table');
+const monitoringStatus = document.getElementById('monitoring-status');
+const monitoringFilter = document.getElementById('monitoring-filter');
+const refreshMonitoringButton = document.getElementById('refresh-monitoring');
 
 function setStatus(element, message, type) {
   if (!element) return;
@@ -110,6 +116,10 @@ function applyRoleVisibility() {
   if (devicesActionsHeader) {
     devicesActionsHeader.classList.toggle('hidden', !signedIn || !isAdmin());
   }
+
+  if (monitoringSection) {
+    monitoringSection.classList.toggle('hidden', !signedIn);
+  }
 }
 
 function updateAuthVisibility() {
@@ -130,9 +140,11 @@ function setCurrentUserFromToken(token) {
     state.currentUser = null;
     state.users = [];
     state.devices = [];
+    state.monitoring = [];
     state.authView = 'login';
     renderUsers();
     renderDevices();
+    renderMonitoring();
     updateSessionSummary();
     applyRoleVisibility();
     updateAuthVisibility();
@@ -170,7 +182,7 @@ function syncCurrentUserRecord() {
   updateSessionSummary();
 }
 
-async function request(path, { method = 'GET', body, headers = {} } = {}) {
+async function request(path, { method = 'GET', body, headers = {}, allowNotFound = false } = {}) {
   const options = {
     method,
     headers: {
@@ -189,6 +201,9 @@ async function request(path, { method = 'GET', body, headers = {} } = {}) {
 
   const response = await fetch(`${API_BASE}${path}`, options);
   if (!response.ok) {
+    if (allowNotFound && response.status === 404) {
+      return null;
+    }
     const message = await safeRead(response);
     throw new Error(message || `Request failed with status ${response.status}`);
   }
@@ -274,6 +289,14 @@ refreshDevicesButton.addEventListener('click', async () => {
   await loadDevices();
 });
 
+refreshMonitoringButton?.addEventListener('click', async () => {
+  await loadMonitoring();
+});
+
+monitoringFilter?.addEventListener('change', async (event) => {
+  await loadMonitoring(event.target.value);
+});
+
 async function loadUsers() {
   if (!state.token) {
     setStatus(userStatus, 'Sign in to load users.', 'error');
@@ -311,9 +334,60 @@ async function loadDevices() {
       ? devices.filter((device) => device.userId === state.currentUser.id)
       : devices;
     renderDevices();
+    updateMonitoringFilterOptions(monitoringFilter?.value);
+    if (!monitoringSection?.classList.contains('hidden')) {
+      await loadMonitoring(monitoringFilter?.value ?? '');
+    }
     setStatus(deviceStatus, `Loaded ${devices.length} devices.`, 'success');
   } catch (error) {
     setStatus(deviceStatus, error.message, 'error');
+  }
+}
+
+async function loadMonitoring(targetDeviceId) {
+  if (!state.token) {
+    setStatus(monitoringStatus, 'Sign in to view consumption.', 'error');
+    return;
+  }
+
+  const normalizedTarget = targetDeviceId === undefined || targetDeviceId === null
+    ? monitoringFilter?.value ?? ''
+    : String(targetDeviceId);
+  const deviceIdFilter = normalizedTarget ? Number(normalizedTarget) : null;
+
+  setStatus(monitoringStatus, 'Loading consumption…');
+  try {
+    const path = deviceIdFilter
+      ? `/monitoring/consumption/device/${deviceIdFilter}`
+      : '/monitoring/consumption';
+
+    const response = await request(path, { allowNotFound: true });
+    const records = Array.isArray(response) ? response : [];
+
+    const allowedDeviceIds = isAdmin()
+      ? null
+      : new Set(
+          state.devices
+            .filter((device) => device.userId === state.currentUser?.id)
+            .map((device) => device.id)
+        );
+
+    state.monitoring = allowedDeviceIds
+      ? records.filter((record) => allowedDeviceIds.has(record.deviceId))
+      : records;
+
+    renderMonitoring();
+
+    const scopeLabel = deviceIdFilter ? `for device #${deviceIdFilter}` : 'for all devices';
+    setStatus(
+      monitoringStatus,
+      `Loaded ${state.monitoring.length} hourly records ${scopeLabel}.`,
+      'success'
+    );
+  } catch (error) {
+    state.monitoring = [];
+    renderMonitoring();
+    setStatus(monitoringStatus, error.message, 'error');
   }
 }
 
@@ -373,6 +447,34 @@ function renderDevices() {
   }
 }
 
+function renderMonitoring() {
+  monitoringTable.innerHTML = '';
+  if (!state.monitoring.length) {
+    monitoringTable.innerHTML = '<tr><td colspan="4">No consumption records found.</td></tr>';
+    return;
+  }
+
+  const deviceNames = new Map(state.devices.map((device) => [device.id, device.name]));
+
+  const sorted = [...state.monitoring].sort((a, b) => {
+    const aDate = new Date(a.hourStart);
+    const bDate = new Date(b.hourStart);
+    return bDate.getTime() - aDate.getTime();
+  });
+
+  for (const record of sorted) {
+    const row = document.createElement('tr');
+    const deviceName = deviceNames.get(record.deviceId) || '';
+    row.innerHTML = `
+      <td>${record.deviceId ?? ''}</td>
+      <td>${escapeHtml(deviceName)}</td>
+      <td>${escapeHtml(formatHour(record.hourStart))}</td>
+      <td>${escapeHtml(record.consumption)}</td>
+    `;
+    monitoringTable.appendChild(row);
+  }
+}
+
 function escapeHtml(value) {
   if (value === null || value === undefined) {
     return '';
@@ -383,6 +485,21 @@ function escapeHtml(value) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
+}
+
+function formatHour(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+  return date.toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
 }
 
 usersTable.addEventListener('click', async (event) => {
@@ -614,6 +731,32 @@ function updateDeviceUserOptions(selectedId) {
 
   deviceUserSelect.innerHTML = options.join('');
   deviceUserSelect.value = sanitizedValue;
+}
+
+function updateMonitoringFilterOptions(selectedId) {
+  if (!monitoringFilter) {
+    return;
+  }
+
+  const devicesForFilter = isAdmin()
+    ? state.devices
+    : state.devices.filter((device) => device.userId === state.currentUser?.id);
+
+  const currentValue =
+    selectedId !== undefined && selectedId !== null
+      ? String(selectedId)
+      : monitoringFilter.value;
+
+  const options = ['<option value="">All devices</option>'];
+  for (const device of devicesForFilter) {
+    const value = escapeHtml(String(device.id));
+    const label = device.name ? `${device.name} (#${device.id})` : `Device #${device.id}`;
+    options.push(`<option value="${value}">${escapeHtml(label)}</option>`);
+  }
+
+  monitoringFilter.innerHTML = options.join('');
+  const sanitizedValue = currentValue ?? '';
+  monitoringFilter.value = sanitizedValue;
 }
 
 // Initialize session banner and role-based visibility without preloading data.

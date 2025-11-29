@@ -66,6 +66,8 @@ The `frontend/` directory contains a lightweight administrative console that sur
 
 Device forms allow selecting an owning user so each device is associated with an account. The devices table surfaces the username alongside device metadata.
 
+The Monitoring card shows hourly consumption aggregates emitted by the simulator and processed by the monitoring service. You can refresh data at any time, filter to a specific device, and view the hour-aligned consumption totals with readable timestamps.
+
 The simulator service emits JSON measurements to RabbitMQ every 10 minutes. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table.
 
 ### Running via Docker Compose

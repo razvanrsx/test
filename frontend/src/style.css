@@ -167,6 +167,16 @@ table tbody tr:hover {
   gap: 0.5rem;
 }
 
+.monitoring-heading .actions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.monitoring-heading select {
+  min-width: 180px;
+}
+
 .status {
   min-height: 1.25rem;
   margin: 0.35rem 0 0;

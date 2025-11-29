@@ -157,6 +157,33 @@
             <p id="device-status-message" class="status"></p>
           </form>
         </section>
+
+        <section id="monitoring-section" class="card hidden">
+          <div class="section-heading monitoring-heading">
+            <div>
+              <h2>Monitoring</h2>
+              <p class="muted">Hourly consumption aggregated from simulator events.</p>
+            </div>
+            <div class="actions">
+              <select id="monitoring-filter">
+                <option value="">All devices</option>
+              </select>
+              <button id="refresh-monitoring" class="secondary">Refresh</button>
+            </div>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Device</th>
+                <th>Device name</th>
+                <th>Hour start</th>
+                <th>Consumption (kWh)</th>
+              </tr>
+            </thead>
+            <tbody id="monitoring-table"></tbody>
+          </table>
+          <p id="monitoring-status" class="status"></p>
+        </section>
       </main>
     </div>
     <script type="module" src="/src/main.js"></script>
