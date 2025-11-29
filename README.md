@@ -9,6 +9,8 @@ services/
   authorization/    # Issues JWT tokens backed by a PostgreSQL credential store
   user/             # CRUD operations for platform users persisted in PostgreSQL
   device/           # CRUD operations for energy devices and ownership assignments persisted in PostgreSQL
+  monitoring/       # Consumes device measurements from RabbitMQ and aggregates hourly energy consumption in PostgreSQL
+  simulator/        # Publishes synthetic device measurements to RabbitMQ
 frontend/           # Vite-powered SPA for user and device CRUD flows
 ```
 
@@ -34,8 +36,10 @@ Supporting files:
    - Authorization service (proxied): `http://localhost:8080/api/auth`
    - User service (proxied): `http://localhost:8080/api/users`
    - Device service (proxied): `http://localhost:8080/api/devices`
-   - Swagger UIs: `http://localhost:8080/api/auth/swagger-ui/index.html`, `http://localhost:8080/api/users/swagger-ui/index.html`, `http://localhost:8080/api/devices/swagger-ui/index.html`
-   - OpenAPI documents: `http://localhost:8080/api/auth/v3/api-docs`, `http://localhost:8080/api/users/v3/api-docs`, `http://localhost:8080/api/devices/v3/api-docs`
+   - Monitoring service (proxied): `http://localhost:8080/api/monitoring`
+   - Swagger UIs: `http://localhost:8080/api/auth/swagger-ui/index.html`, `http://localhost:8080/api/users/swagger-ui/index.html`, `http://localhost:8080/api/devices/swagger-ui/index.html`, `http://localhost:8080/api/monitoring/swagger-ui/index.html`
+   - OpenAPI documents: `http://localhost:8080/api/auth/v3/api-docs`, `http://localhost:8080/api/users/v3/api-docs`, `http://localhost:8080/api/devices/v3/api-docs`, `http://localhost:8080/api/monitoring/v3/api-docs`
+   - RabbitMQ management UI: `http://localhost:15672` (default credentials `guest` / `guest`)
 
 3. **Obtain a JWT**
    ```bash
@@ -61,6 +65,8 @@ The `frontend/` directory contains a lightweight administrative console that sur
 - **Clients** see a read-only view filtered to their own devices (matched by username/userId) and cannot manage user accounts or modify devices.
 
 Device forms allow selecting an owning user so each device is associated with an account. The devices table surfaces the username alongside device metadata.
+
+The simulator service emits JSON measurements to RabbitMQ every 10 minutes. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table.
 
 ### Running via Docker Compose
 
@@ -93,9 +99,15 @@ The compiled assets are written to `frontend/dist/` and can be served through an
 Each microservice is a standalone Maven project:
 
 1. Open the repository folder in IntelliJ IDEA.
-2. Import Maven projects when prompted. IntelliJ detects the three services automatically.
+2. Import Maven projects when prompted. IntelliJ detects all service modules automatically.
 3. Use the Maven tool window or create Spring Boot run configurations for the `*ServiceApplication` classes. Update `SPRING_DATASOURCE_*` environment variables in each configuration to point at a running PostgreSQL instance.
 4. Optionally configure a Docker Compose run configuration targeting `docker-compose.yml` for full-stack execution.
+
+## Monitoring and messaging
+
+- **Message broker**: RabbitMQ (exposed at `localhost:15672` for the management UI) mediates communication between the simulator producer and the monitoring consumer. Messages land on the durable queue `device.measurements`.
+- **Producer**: The `simulator-service` emits measurements on a configurable interval (default 10 minutes) with fields `deviceId`, `consumption`, and `timestamp`.
+- **Consumer**: The `monitoring-service` listens to the same queue, truncates timestamps to the hour, and upserts rows into `hourly_consumption` so hourly energy consumption values are persisted.
 
 ## Configuration
 
@@ -120,11 +132,20 @@ docker compose exec user-db psql -U user_user -d users
 
 # Device catalog database
 docker compose exec device-db psql -U device_user -d devices
+
+# Monitoring database
+docker compose exec monitoring-db psql -U monitor_user -d monitoring
 ```
 
 The commands above open interactive shells where you can run SQL queries (e.g., `\dt` to list tables or `SELECT * FROM users;`). When you are done, exit the session with `\q`.
 
 If you prefer connecting from an external SQL client, expose the PostgreSQL ports by adding temporary port mappings in `docker-compose.yml` (for example `5432:5432` on `authorization-db`) or by using `docker compose port authorization-db 5432` to discover the ephemeral host port that Docker assigned.
+
+## Assignment 3.1 answers
+
+- **Message broker**: The system uses RabbitMQ as the event-based middleware to decouple producers (simulator) from consumers (monitoring service) and deliver JSON measurement payloads reliably.
+- **Monitoring microservice**: The monitoring service consumes measurement messages, aggregates them to hourly totals, and writes the results into its dedicated PostgreSQL schema for later analysis.
+- **Data simulator**: A standalone simulator microservice publishes randomised device readings every 10 minutes to the `device.measurements` queue, fulfilling the requirement for an automatic measurement producer.
 
 ## Testing the APIs
 

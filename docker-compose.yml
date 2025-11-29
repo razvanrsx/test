@@ -95,6 +95,53 @@ services:
       - "traefik.http.routers.frontend.priority=1"
       - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
+  monitoring-service:
+    build: ./services/monitoring
+    depends_on:
+      - monitoring-db
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://monitoring-db:5432/monitoring
+      SPRING_DATASOURCE_USERNAME: monitor_user
+      SPRING_DATASOURCE_PASSWORD: monitor_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitoring.rule=PathPrefix(`/api/monitoring`)"
+      - "traefik.http.routers.monitoring.entrypoints=web"
+      - "traefik.http.routers.monitoring.priority=10"
+      - "traefik.http.middlewares.monitoring-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.monitoring.middlewares=monitoring-strip"
+      - "traefik.http.services.monitoring.loadbalancer.server.port=8083"
+
+  monitoring-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: monitor_user
+      POSTGRES_PASSWORD: monitor_password
+    volumes:
+      - monitoring-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  simulator-service:
+    build: ./services/simulator
+    depends_on:
+      - rabbitmq
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SIMULATOR_DEVICE_IDS: 1,2,3
+
   device-db:
     image: postgres:15
     environment:
@@ -108,3 +155,4 @@ volumes:
   authorization-data:
   user-data:
   device-data:
+  monitoring-data:
