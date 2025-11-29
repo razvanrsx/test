@@ -6,22 +6,27 @@ const state = {
   token: null,
   tokenExpiresAt: null,
   users: [],
-  devices: []
+  devices: [],
+  currentUser: null
 };
 
 const loginForm = document.getElementById('login-form');
 const loginStatus = document.getElementById('login-status');
+const sessionSummary = document.getElementById('session-summary');
 const usersTable = document.getElementById('users-table');
 const userForm = document.getElementById('user-form');
 const userFormTitle = document.getElementById('user-form-title');
 const userStatus = document.getElementById('user-status');
 const userCancelButton = document.getElementById('user-cancel');
+const usersSection = document.getElementById('users-section');
+const usersActionsHeader = document.getElementById('users-actions-header');
 const refreshUsersButton = document.getElementById('refresh-users');
 const devicesTable = document.getElementById('devices-table');
 const deviceForm = document.getElementById('device-form');
 const deviceFormTitle = document.getElementById('device-form-title');
 const deviceStatus = document.getElementById('device-status-message');
 const deviceCancelButton = document.getElementById('device-cancel');
+const devicesActionsHeader = document.getElementById('devices-actions-header');
 const refreshDevicesButton = document.getElementById('refresh-devices');
 const deviceUserSelect = document.getElementById('device-user');
 
@@ -34,6 +39,95 @@ function setStatus(element, message, type) {
   } else if (type === 'success') {
     element.classList.add('success');
   }
+}
+
+function parseJwt(token) {
+  if (!token) return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const decoded = atob(payload);
+    return JSON.parse(decoded);
+  } catch (error) {
+    return null;
+  }
+}
+
+function isAdmin() {
+  return Boolean(state.currentUser?.roles?.includes('ADMIN'));
+}
+
+function isClient() {
+  return Boolean(state.currentUser?.roles?.includes('CLIENT'));
+}
+
+function updateSessionSummary() {
+  if (!sessionSummary) return;
+  if (state.token && state.currentUser?.username) {
+    const rolesLabel = state.currentUser.roles?.length
+      ? `Role: ${state.currentUser.roles.join(', ')}`
+      : 'Role: not set';
+    sessionSummary.textContent = `Signed in as ${state.currentUser.username}. ${rolesLabel}.`;
+  } else {
+    sessionSummary.textContent = 'Not signed in.';
+  }
+}
+
+function applyRoleVisibility() {
+  if (usersSection) {
+    usersSection.classList.toggle('hidden', !isAdmin());
+  }
+  if (usersActionsHeader) {
+    usersActionsHeader.classList.toggle('hidden', !isAdmin());
+  }
+  if (deviceFormTitle) {
+    deviceFormTitle.classList.toggle('hidden', !isAdmin());
+  }
+  if (deviceForm) {
+    deviceForm.classList.toggle('hidden', !isAdmin());
+  }
+  if (devicesActionsHeader) {
+    devicesActionsHeader.classList.toggle('hidden', !isAdmin());
+  }
+}
+
+function setCurrentUserFromToken(token) {
+  if (!token) {
+    state.currentUser = null;
+    updateSessionSummary();
+    applyRoleVisibility();
+    return;
+  }
+
+  const payload = parseJwt(token) || {};
+  const roles = Array.isArray(payload.roles)
+    ? payload.roles
+    : payload.roles
+      ? [payload.roles]
+      : [];
+
+  state.currentUser = {
+    username: payload.sub || '',
+    roles,
+    id: state.currentUser?.id ?? null
+  };
+  updateSessionSummary();
+  applyRoleVisibility();
+}
+
+function syncCurrentUserRecord() {
+  if (!state.currentUser?.username || !state.users?.length) {
+    return;
+  }
+
+  const match = state.users.find(
+    (user) => user.username?.toLowerCase() === state.currentUser.username.toLowerCase()
+  );
+  if (match) {
+    state.currentUser.id = match.id;
+  }
+  updateSessionSummary();
 }
 
 async function request(path, { method = 'GET', body, headers = {} } = {}) {
@@ -94,6 +188,7 @@ function updateAuthState(token, expiresInSeconds) {
   } else {
     state.tokenExpiresAt = null;
   }
+  setCurrentUserFromToken(token);
 }
 
 loginForm.addEventListener('submit', async (event) => {
@@ -109,7 +204,8 @@ loginForm.addEventListener('submit', async (event) => {
     });
     updateAuthState(result.token, result.expiresIn);
     setStatus(loginStatus, `Signed in. Token expires in ${Math.round(result.expiresIn / 60)} minutes.`, 'success');
-    await Promise.all([loadUsers(), loadDevices()]);
+    await loadUsers();
+    await loadDevices();
   } catch (error) {
     updateAuthState(null, null);
     setStatus(loginStatus, error.message || 'Login failed', 'error');
@@ -129,6 +225,8 @@ async function loadUsers() {
   try {
     const users = await request('/users');
     state.users = users;
+    syncCurrentUserRecord();
+    applyRoleVisibility();
     renderUsers();
     updateDeviceUserOptions();
     renderDevices();
@@ -141,8 +239,15 @@ async function loadUsers() {
 async function loadDevices() {
   setStatus(deviceStatus, 'Loading devices…');
   try {
-    const devices = await request('/devices');
-    state.devices = devices;
+    let path = '/devices';
+    if (!isAdmin() && state.currentUser?.id) {
+      path = `/devices?userId=${encodeURIComponent(state.currentUser.id)}`;
+    }
+
+    const devices = await request(path);
+    state.devices = !isAdmin() && state.currentUser?.id
+      ? devices.filter((device) => device.userId === state.currentUser.id)
+      : devices;
     renderDevices();
     setStatus(deviceStatus, `Loaded ${devices.length} devices.`, 'success');
   } catch (error) {
@@ -159,17 +264,18 @@ function renderUsers() {
 
   for (const user of state.users) {
     const row = document.createElement('tr');
+    const actions = isAdmin()
+      ? `<div class="actions">
+          <button type="button" class="secondary edit-user" data-id="${user.id}">Edit</button>
+          <button type="button" class="secondary delete-user" data-id="${user.id}">Delete</button>
+        </div>`
+      : '<span class="pill">Admin only</span>';
     row.innerHTML = `
       <td>${user.id ?? ''}</td>
       <td>${escapeHtml(user.username)}</td>
       <td>${escapeHtml(user.email)}</td>
       <td>${escapeHtml(user.role)}</td>
-      <td>
-        <div class="actions">
-          <button type="button" class="secondary edit-user" data-id="${user.id}">Edit</button>
-          <button type="button" class="secondary delete-user" data-id="${user.id}">Delete</button>
-        </div>
-      </td>
+      <td>${actions}</td>
     `;
     usersTable.appendChild(row);
   }
@@ -186,6 +292,12 @@ function renderDevices() {
     const row = document.createElement('tr');
     const owner = state.users.find((user) => user.id === device.userId);
     const ownerLabel = owner ? owner.username : (device.userId ?? '');
+    const actions = isAdmin()
+      ? `<div class="actions">
+          <button type="button" class="secondary edit-device" data-id="${device.id}">Edit</button>
+          <button type="button" class="secondary delete-device" data-id="${device.id}">Delete</button>
+        </div>`
+      : '<span class="pill">Read only</span>';
     row.innerHTML = `
       <td>${device.id ?? ''}</td>
       <td>${escapeHtml(device.name)}</td>
@@ -193,12 +305,7 @@ function renderDevices() {
       <td>${escapeHtml(device.status)}</td>
       <td>${device.maxConsumption != null ? escapeHtml(device.maxConsumption) : ''}</td>
       <td>${escapeHtml(ownerLabel)}</td>
-      <td>
-        <div class="actions">
-          <button type="button" class="secondary edit-device" data-id="${device.id}">Edit</button>
-          <button type="button" class="secondary delete-device" data-id="${device.id}">Delete</button>
-        </div>
-      </td>
+      <td>${actions}</td>
     `;
     devicesTable.appendChild(row);
   }
@@ -417,6 +524,7 @@ function updateDeviceUserOptions(selectedId) {
 }
 
 // Attempt to load initial data when the page loads.
+updateSessionSummary();
 loadUsers().catch(() => {
   setStatus(userStatus, 'Sign in and click Refresh to load users.', 'error');
 });

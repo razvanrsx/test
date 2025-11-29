@@ -10,6 +10,7 @@
       <header>
         <h1>Device Platform Admin</h1>
         <p class="subtitle">Manage users and devices exposed by the Spring Boot microservices stack.</p>
+        <p id="session-summary" class="status muted"></p>
       </header>
       <main>
         <section id="login-section" class="card">
@@ -40,7 +41,7 @@
                 <th>Username</th>
                 <th>Email</th>
                 <th>Role</th>
-                <th></th>
+                <th id="users-actions-header"></th>
               </tr>
             </thead>
             <tbody id="users-table"></tbody>
@@ -91,7 +92,7 @@
                 <th>Status</th>
                 <th>Max consumption</th>
                 <th>Owner</th>
-                <th></th>
+                <th id="devices-actions-header"></th>
               </tr>
             </thead>
             <tbody id="devices-table"></tbody>
