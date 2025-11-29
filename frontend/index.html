@@ -24,11 +24,12 @@
               <input id="login-password" name="password" type="password" autocomplete="current-password" required />
             </div>
             <button type="submit">Sign in</button>
+            <button type="button" id="show-register" class="secondary link-button">Register</button>
             <p id="login-status" class="status"></p>
           </form>
         </section>
 
-        <section id="register-section" class="card">
+        <section id="register-section" class="card hidden">
           <h2>Register</h2>
           <p class="muted">Create a CLIENT account to sign in and view your devices.</p>
           <form id="register-form">
@@ -45,6 +46,7 @@
               <input id="register-password" name="password" type="password" autocomplete="new-password" required />
             </div>
             <button type="submit">Create account</button>
+            <button type="button" id="show-login" class="secondary link-button">Back to sign in</button>
             <p id="register-status" class="status"></p>
           </form>
         </section>

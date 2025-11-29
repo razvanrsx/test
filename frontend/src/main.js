@@ -7,14 +7,19 @@ const state = {
   tokenExpiresAt: null,
   users: [],
   devices: [],
-  currentUser: null
+  currentUser: null,
+  authView: 'login'
 };
 
+const loginSection = document.getElementById('login-section');
 const loginForm = document.getElementById('login-form');
 const loginStatus = document.getElementById('login-status');
 const sessionSummary = document.getElementById('session-summary');
+const registerSection = document.getElementById('register-section');
 const registerForm = document.getElementById('register-form');
 const registerStatus = document.getElementById('register-status');
+const showRegisterButton = document.getElementById('show-register');
+const showLoginButton = document.getElementById('show-login');
 const usersTable = document.getElementById('users-table');
 const userForm = document.getElementById('user-form');
 const userFormTitle = document.getElementById('user-form-title');
@@ -107,15 +112,30 @@ function applyRoleVisibility() {
   }
 }
 
+function updateAuthVisibility() {
+  const signedIn = Boolean(state.token);
+  if (signedIn) {
+    loginSection?.classList.add('hidden');
+    registerSection?.classList.add('hidden');
+    return;
+  }
+
+  const showingRegister = state.authView === 'register';
+  loginSection?.classList.toggle('hidden', showingRegister);
+  registerSection?.classList.toggle('hidden', !showingRegister);
+}
+
 function setCurrentUserFromToken(token) {
   if (!token) {
     state.currentUser = null;
     state.users = [];
     state.devices = [];
+    state.authView = 'login';
     renderUsers();
     renderDevices();
     updateSessionSummary();
     applyRoleVisibility();
+    updateAuthVisibility();
     return;
   }
 
@@ -133,6 +153,7 @@ function setCurrentUserFromToken(token) {
   };
   updateSessionSummary();
   applyRoleVisibility();
+  updateAuthVisibility();
 }
 
 function syncCurrentUserRecord() {
@@ -199,6 +220,20 @@ async function safeRead(response) {
     return '';
   }
 }
+
+showRegisterButton?.addEventListener('click', () => {
+  state.authView = 'register';
+  setStatus(loginStatus, '');
+  setStatus(registerStatus, '');
+  updateAuthVisibility();
+});
+
+showLoginButton?.addEventListener('click', () => {
+  state.authView = 'login';
+  setStatus(loginStatus, '');
+  setStatus(registerStatus, '');
+  updateAuthVisibility();
+});
 
 function updateAuthState(token, expiresInSeconds) {
   state.token = token;
@@ -584,3 +619,4 @@ function updateDeviceUserOptions(selectedId) {
 // Initialize session banner and role-based visibility without preloading data.
 updateSessionSummary();
 applyRoleVisibility();
+updateAuthVisibility();
