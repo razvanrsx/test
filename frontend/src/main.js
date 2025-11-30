@@ -9,7 +9,11 @@ const state = {
   devices: [],
   monitoring: [],
   currentUser: null,
-  authView: 'login'
+  authView: 'login',
+  userSyncAt: null,
+  deviceSyncAt: null,
+  monitoringDay: null,
+  monitoringChartType: 'line'
 };
 
 const loginSection = document.getElementById('login-section');
@@ -21,6 +25,7 @@ const registerForm = document.getElementById('register-form');
 const registerStatus = document.getElementById('register-status');
 const showRegisterButton = document.getElementById('show-register');
 const showLoginButton = document.getElementById('show-login');
+const userSyncStatus = document.getElementById('user-sync-status');
 const usersTable = document.getElementById('users-table');
 const userForm = document.getElementById('user-form');
 const userFormTitle = document.getElementById('user-form-title');
@@ -38,11 +43,16 @@ const deviceCancelButton = document.getElementById('device-cancel');
 const devicesActionsHeader = document.getElementById('devices-actions-header');
 const refreshDevicesButton = document.getElementById('refresh-devices');
 const deviceUserSelect = document.getElementById('device-user');
+const deviceSyncStatus = document.getElementById('device-sync-status');
 const monitoringSection = document.getElementById('monitoring-section');
 const monitoringTable = document.getElementById('monitoring-table');
 const monitoringStatus = document.getElementById('monitoring-status');
 const monitoringFilter = document.getElementById('monitoring-filter');
 const refreshMonitoringButton = document.getElementById('refresh-monitoring');
+const monitoringDayInput = document.getElementById('monitoring-day');
+const monitoringChart = document.getElementById('monitoring-chart');
+const chartLineButton = document.getElementById('chart-line');
+const chartBarButton = document.getElementById('chart-bar');
 
 function setStatus(element, message, type) {
   if (!element) return;
@@ -141,12 +151,16 @@ function setCurrentUserFromToken(token) {
     state.users = [];
     state.devices = [];
     state.monitoring = [];
+    state.userSyncAt = null;
+    state.deviceSyncAt = null;
     state.authView = 'login';
     renderUsers();
     renderDevices();
     renderMonitoring();
+    renderMonitoringChart();
     updateSessionSummary();
     applyRoleVisibility();
+    updateSyncBadges();
     updateAuthVisibility();
     return;
   }
@@ -297,6 +311,25 @@ monitoringFilter?.addEventListener('change', async (event) => {
   await loadMonitoring(event.target.value);
 });
 
+monitoringDayInput?.addEventListener('change', () => {
+  state.monitoringDay = monitoringDayInput.value || null;
+  renderMonitoringChart();
+});
+
+function setChartType(type) {
+  state.monitoringChartType = type;
+  if (chartLineButton) {
+    chartLineButton.classList.toggle('active', type === 'line');
+  }
+  if (chartBarButton) {
+    chartBarButton.classList.toggle('active', type === 'bar');
+  }
+  renderMonitoringChart();
+}
+
+chartLineButton?.addEventListener('click', () => setChartType('line'));
+chartBarButton?.addEventListener('click', () => setChartType('bar'));
+
 async function loadUsers() {
   if (!state.token) {
     setStatus(userStatus, 'Sign in to load users.', 'error');
@@ -311,6 +344,8 @@ async function loadUsers() {
     renderUsers();
     updateDeviceUserOptions();
     renderDevices();
+    state.userSyncAt = Date.now();
+    updateSyncBadges();
     setStatus(userStatus, `Loaded ${users.length} users.`, 'success');
   } catch (error) {
     setStatus(userStatus, error.message, 'error');
@@ -338,6 +373,8 @@ async function loadDevices() {
     if (!monitoringSection?.classList.contains('hidden')) {
       await loadMonitoring(monitoringFilter?.value ?? '');
     }
+    state.deviceSyncAt = Date.now();
+    updateSyncBadges();
     setStatus(deviceStatus, `Loaded ${devices.length} devices.`, 'success');
   } catch (error) {
     setStatus(deviceStatus, error.message, 'error');
@@ -376,7 +413,16 @@ async function loadMonitoring(targetDeviceId) {
       ? records.filter((record) => allowedDeviceIds.has(record.deviceId))
       : records;
 
+    if (!state.monitoringDay) {
+      const firstRecord = state.monitoring[0];
+      if (firstRecord?.hourStart) {
+        state.monitoringDay = formatDateInput(new Date(firstRecord.hourStart));
+      }
+    }
+    ensureMonitoringDay();
+
     renderMonitoring();
+    renderMonitoringChart();
 
     const scopeLabel = deviceIdFilter ? `for device #${deviceIdFilter}` : 'for all devices';
     setStatus(
@@ -387,6 +433,7 @@ async function loadMonitoring(targetDeviceId) {
   } catch (error) {
     state.monitoring = [];
     renderMonitoring();
+    renderMonitoringChart();
     setStatus(monitoringStatus, error.message, 'error');
   }
 }
@@ -475,6 +522,140 @@ function renderMonitoring() {
   }
 }
 
+function filterMonitoringByDay(dayString) {
+  if (!dayString) {
+    return [];
+  }
+
+  const target = new Date(dayString);
+  if (Number.isNaN(target.getTime())) {
+    return [];
+  }
+
+  return state.monitoring.filter((record) => {
+    const current = new Date(record.hourStart);
+    return (
+      !Number.isNaN(current.getTime()) &&
+      current.getFullYear() === target.getFullYear() &&
+      current.getMonth() === target.getMonth() &&
+      current.getDate() === target.getDate()
+    );
+  });
+}
+
+function renderMonitoringChart() {
+  if (!monitoringChart) return;
+
+  monitoringChart.innerHTML = '';
+  ensureMonitoringDay();
+
+  const filtered = filterMonitoringByDay(state.monitoringDay);
+  if (!filtered.length) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'No consumption records for the selected day.';
+    monitoringChart.appendChild(empty);
+    return;
+  }
+
+  const hourly = new Array(24).fill(0);
+  for (const record of filtered) {
+    const date = new Date(record.hourStart);
+    if (Number.isNaN(date.getTime())) continue;
+    const hour = date.getHours();
+    hourly[hour] += Number(record.consumption) || 0;
+  }
+
+  const maxValue = Math.max(...hourly);
+  if (maxValue <= 0) {
+    const empty = document.createElement('p');
+    empty.className = 'empty';
+    empty.textContent = 'No measurable consumption for the selected day.';
+    monitoringChart.appendChild(empty);
+    return;
+  }
+
+  const width = 720;
+  const height = 260;
+  const padding = 40;
+  const innerWidth = width - padding * 2;
+  const innerHeight = height - padding * 2;
+
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`);
+
+  const axis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  axis.setAttribute('x1', padding);
+  axis.setAttribute('y1', height - padding);
+  axis.setAttribute('x2', width - padding);
+  axis.setAttribute('y2', height - padding);
+  axis.setAttribute('stroke', '#cbd2d9');
+  axis.setAttribute('stroke-width', '2');
+  svg.appendChild(axis);
+
+  const yAxis = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  yAxis.setAttribute('x1', padding);
+  yAxis.setAttribute('y1', padding);
+  yAxis.setAttribute('x2', padding);
+  yAxis.setAttribute('y2', height - padding);
+  yAxis.setAttribute('stroke', '#cbd2d9');
+  yAxis.setAttribute('stroke-width', '2');
+  svg.appendChild(yAxis);
+
+  const step = innerWidth / 24;
+  const points = [];
+  hourly.forEach((value, hour) => {
+    const x = padding + hour * step + step / 2;
+    const y = padding + innerHeight - (value / maxValue) * innerHeight;
+    points.push(`${x},${y}`);
+
+    if (state.monitoringChartType === 'bar') {
+      const bar = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      const barWidth = step * 0.7;
+      const barHeight = (value / maxValue) * innerHeight;
+      bar.setAttribute('x', padding + hour * step + (step - barWidth) / 2);
+      bar.setAttribute('y', padding + innerHeight - barHeight);
+      bar.setAttribute('width', barWidth);
+      bar.setAttribute('height', barHeight);
+      bar.setAttribute('fill', '#2563eb');
+      bar.setAttribute('opacity', '0.8');
+      svg.appendChild(bar);
+    }
+  });
+
+  if (state.monitoringChartType === 'line') {
+    const polyline = document.createElementNS('http://www.w3.org/2000/svg', 'polyline');
+    polyline.setAttribute('points', points.join(' '));
+    polyline.setAttribute('fill', 'none');
+    polyline.setAttribute('stroke', '#2563eb');
+    polyline.setAttribute('stroke-width', '3');
+    svg.appendChild(polyline);
+  }
+
+  for (let hour = 0; hour < 24; hour += 6) {
+    const x = padding + hour * step + step / 2;
+    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    label.setAttribute('x', x);
+    label.setAttribute('y', height - padding + 18);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', '#52606d');
+    label.setAttribute('font-size', '12');
+    label.textContent = `${hour}:00`;
+    svg.appendChild(label);
+  }
+
+  const title = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  title.setAttribute('x', padding);
+  title.setAttribute('y', padding - 12);
+  title.setAttribute('fill', '#1f2933');
+  title.setAttribute('font-size', '14');
+  title.setAttribute('font-weight', '600');
+  title.textContent = `Consumption on ${state.monitoringDay} (kWh per hour)`;
+  svg.appendChild(title);
+
+  monitoringChart.appendChild(svg);
+}
+
 function escapeHtml(value) {
   if (value === null || value === undefined) {
     return '';
@@ -500,6 +681,41 @@ function formatHour(value) {
     hour: '2-digit',
     minute: '2-digit'
   });
+}
+
+function formatDateInput(date) {
+  if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+    return '';
+  }
+  const year = date.getFullYear();
+  const month = `${date.getMonth() + 1}`.padStart(2, '0');
+  const day = `${date.getDate()}`.padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function ensureMonitoringDay() {
+  if (!state.monitoringDay) {
+    state.monitoringDay = formatDateInput(new Date());
+  }
+  if (monitoringDayInput && !monitoringDayInput.value) {
+    monitoringDayInput.value = state.monitoringDay;
+  }
+}
+
+function formatSyncTime(timestamp) {
+  if (!timestamp) {
+    return 'Not synchronized yet.';
+  }
+  return `Last synchronized at ${new Date(timestamp).toLocaleString()}`;
+}
+
+function updateSyncBadges() {
+  if (userSyncStatus) {
+    userSyncStatus.textContent = `User Synchronization: ${formatSyncTime(state.userSyncAt)}`;
+  }
+  if (deviceSyncStatus) {
+    deviceSyncStatus.textContent = `Device Synchronization: ${formatSyncTime(state.deviceSyncAt)}`;
+  }
 }
 
 usersTable.addEventListener('click', async (event) => {
@@ -763,3 +979,6 @@ function updateMonitoringFilterOptions(selectedId) {
 updateSessionSummary();
 applyRoleVisibility();
 updateAuthVisibility();
+ensureMonitoringDay();
+updateSyncBadges();
+setChartType(state.monitoringChartType);

@@ -56,6 +56,7 @@
             <h2>Users</h2>
             <button id="refresh-users" class="secondary">Refresh</button>
           </div>
+          <p id="user-sync-status" class="status muted compact"></p>
           <table>
             <thead>
               <tr>
@@ -105,6 +106,7 @@
             <h2>Devices</h2>
             <button id="refresh-devices" class="secondary">Refresh</button>
           </div>
+          <p id="device-sync-status" class="status muted compact"></p>
           <table>
             <thead>
               <tr>
@@ -168,9 +170,16 @@
               <select id="monitoring-filter">
                 <option value="">All devices</option>
               </select>
+              <label class="inline-label" for="monitoring-day">Day</label>
+              <input id="monitoring-day" type="date" />
+              <div class="chart-toggle" role="group" aria-label="Chart type">
+                <button type="button" class="secondary" data-chart="line" id="chart-line">Line</button>
+                <button type="button" class="secondary" data-chart="bar" id="chart-bar">Bar</button>
+              </div>
               <button id="refresh-monitoring" class="secondary">Refresh</button>
             </div>
           </div>
+          <div id="monitoring-chart" class="chart"></div>
           <table>
             <thead>
               <tr>

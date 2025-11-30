@@ -195,6 +195,11 @@ table tbody tr:hover {
   color: #52606d;
 }
 
+.status.compact {
+  margin-top: 0;
+  font-size: 0.9rem;
+}
+
 .pill {
   display: inline-block;
   padding: 0.25rem 0.6rem;
@@ -209,4 +214,52 @@ table tbody tr:hover {
   font-size: 0.85rem;
   color: #52606d;
   display: block;
+}
+
+.inline-label {
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.chart-toggle {
+  display: inline-flex;
+  border: 1px solid #cbd2d9;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.chart-toggle button {
+  border-radius: 0;
+  border: none;
+  background: #f8fafc;
+  color: #1f2933;
+}
+
+.chart-toggle button.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.chart-toggle button + button {
+  border-left: 1px solid #cbd2d9;
+}
+
+.chart {
+  margin: 1rem 0 1.5rem;
+  background: linear-gradient(180deg, #f8fafc 0%, #ffffff 100%);
+  border: 1px solid #e4e7eb;
+  border-radius: 12px;
+  padding: 1rem;
+  min-height: 260px;
+}
+
+.chart svg {
+  width: 100%;
+  height: 260px;
+}
+
+.chart .empty {
+  color: #52606d;
+  text-align: center;
+  padding: 1rem 0;
 }
