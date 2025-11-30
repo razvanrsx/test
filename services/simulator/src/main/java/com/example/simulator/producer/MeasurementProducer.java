@@ -4,6 +4,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
+import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -38,7 +40,7 @@ public class MeasurementProducer {
 
     private final BigDecimal baseConsumption;
 
-    @Scheduled(fixedDelayString = "${simulator.intervalMs:600000}")
+    @Scheduled(fixedDelayString = "${simulator.intervalMs:60000}")
     public void publishMeasurement() {
         if (deviceIds.isEmpty()) {
             LOGGER.warn("No device ids configured for simulator; skipping publish");
@@ -50,5 +52,11 @@ public class MeasurementProducer {
         MeasurementEvent event = new MeasurementEvent(deviceId, reading, OffsetDateTime.now());
         rabbitTemplate.convertAndSend(QUEUE_NAME, event);
         LOGGER.info("Published measurement {} kWh for device {}", reading, deviceId);
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void sendWarmupMeasurement() {
+        LOGGER.info("Sending warm-up measurement so monitoring has data shortly after startup");
+        publishMeasurement();
     }
 }

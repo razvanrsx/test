@@ -141,6 +141,7 @@ services:
     environment:
       SPRING_RABBITMQ_HOST: rabbitmq
       SIMULATOR_DEVICE_IDS: 1,2,3
+      SIMULATOR_INTERVAL_MS: 60000
 
   device-db:
     image: postgres:15

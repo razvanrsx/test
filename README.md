@@ -70,7 +70,7 @@ Each data grid surfaces its own synchronization label so you can see when users 
 
 The Monitoring card shows hourly consumption aggregates emitted by the simulator and processed by the monitoring service. You can refresh data at any time, filter to a specific device, choose a calendar day, and visualize the per-hour totals as either a line or bar chart in addition to the tabular view. If you just started the stack, the Monitoring section will display a waiting message until the simulator publishes its first batch of readings—records refresh automatically every 15 seconds once you are signed in.
 
-The simulator service emits JSON measurements to RabbitMQ every 10 minutes. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table. If you do not see any chart data, wait for the next simulator tick or press **Refresh** after a few seconds.
+The simulator service emits an initial warm-up reading right after startup and then continues sending JSON measurements to RabbitMQ every 60 seconds. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table. If you do not see any chart data, press **Refresh** after a minute to retrieve the first batch of readings.
 
 ### Running via Docker Compose
 

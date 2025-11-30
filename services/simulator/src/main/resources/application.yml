@@ -10,7 +10,7 @@ spring:
 simulator:
   deviceIds: ${SIMULATOR_DEVICE_IDS:1,2,3}
   baseConsumption: ${SIMULATOR_BASE_CONSUMPTION:0.5}
-  intervalMs: ${SIMULATOR_INTERVAL_MS:600000}
+  intervalMs: ${SIMULATOR_INTERVAL_MS:60000}
 
 logging:
   level:
