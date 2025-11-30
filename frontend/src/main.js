@@ -53,6 +53,7 @@ const monitoringDayInput = document.getElementById('monitoring-day');
 const monitoringChart = document.getElementById('monitoring-chart');
 const chartLineButton = document.getElementById('chart-line');
 const chartBarButton = document.getElementById('chart-bar');
+let monitoringPollHandle = null;
 
 function setStatus(element, message, type) {
   if (!element) return;
@@ -147,6 +148,10 @@ function updateAuthVisibility() {
 
 function setCurrentUserFromToken(token) {
   if (!token) {
+    if (monitoringPollHandle) {
+      clearInterval(monitoringPollHandle);
+      monitoringPollHandle = null;
+    }
     state.currentUser = null;
     state.users = [];
     state.devices = [];
@@ -180,6 +185,17 @@ function setCurrentUserFromToken(token) {
   updateSessionSummary();
   applyRoleVisibility();
   updateAuthVisibility();
+}
+
+function startMonitoringPoll() {
+  if (monitoringPollHandle) {
+    clearInterval(monitoringPollHandle);
+  }
+  monitoringPollHandle = setInterval(() => {
+    if (state.token && !monitoringSection?.classList.contains('hidden')) {
+      loadMonitoring(monitoringFilter?.value ?? '');
+    }
+  }, 15000);
 }
 
 function syncCurrentUserRecord() {
@@ -372,6 +388,7 @@ async function loadDevices() {
     updateMonitoringFilterOptions(monitoringFilter?.value);
     if (!monitoringSection?.classList.contains('hidden')) {
       await loadMonitoring(monitoringFilter?.value ?? '');
+      startMonitoringPoll();
     }
     state.deviceSyncAt = Date.now();
     updateSyncBadges();
@@ -497,7 +514,8 @@ function renderDevices() {
 function renderMonitoring() {
   monitoringTable.innerHTML = '';
   if (!state.monitoring.length) {
-    monitoringTable.innerHTML = '<tr><td colspan="4">No consumption records found.</td></tr>';
+    monitoringTable.innerHTML =
+      '<tr><td colspan="4">No consumption records yet. If you just started the stack, wait a few seconds for the simulator to send readings, then click Refresh.</td></tr>';
     return;
   }
 
@@ -553,7 +571,8 @@ function renderMonitoringChart() {
   if (!filtered.length) {
     const empty = document.createElement('p');
     empty.className = 'empty';
-    empty.textContent = 'No consumption records for the selected day.';
+    empty.textContent =
+      'No consumption records for the selected day. The simulator may need a short time to publish hourly data.';
     monitoringChart.appendChild(empty);
     return;
   }

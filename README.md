@@ -68,9 +68,9 @@ Device forms allow selecting an owning user so each device is associated with an
 
 Each data grid surfaces its own synchronization label so you can see when users and devices were last refreshed through the Traefik reverse proxy.
 
-The Monitoring card shows hourly consumption aggregates emitted by the simulator and processed by the monitoring service. You can refresh data at any time, filter to a specific device, choose a calendar day, and visualize the per-hour totals as either a line or bar chart in addition to the tabular view.
+The Monitoring card shows hourly consumption aggregates emitted by the simulator and processed by the monitoring service. You can refresh data at any time, filter to a specific device, choose a calendar day, and visualize the per-hour totals as either a line or bar chart in addition to the tabular view. If you just started the stack, the Monitoring section will display a waiting message until the simulator publishes its first batch of readings—records refresh automatically every 15 seconds once you are signed in.
 
-The simulator service emits JSON measurements to RabbitMQ every 10 minutes. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table.
+The simulator service emits JSON measurements to RabbitMQ every 10 minutes. The monitoring service consumes those messages, aggregates them per device hour, and persists the totals into its PostgreSQL database. Aggregated values can be queried through the monitoring REST endpoints or observed directly in the `hourly_consumption` table. If you do not see any chart data, wait for the next simulator tick or press **Refresh** after a few seconds.
 
 ### Running via Docker Compose
 
