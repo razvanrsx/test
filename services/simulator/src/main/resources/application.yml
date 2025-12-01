@@ -1,0 +1,20 @@
+spring:
+  application:
+    name: simulator-service
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+simulator:
+  deviceIds: ${SIMULATOR_DEVICE_IDS:1,2,3}
+  baseConsumption: ${SIMULATOR_BASE_CONSUMPTION:0.5}
+  intervalMs: ${SIMULATOR_INTERVAL_MS:60000}
+
+logging:
+  level:
+    com.example.simulator: INFO
+
+server:
+  port: 8084

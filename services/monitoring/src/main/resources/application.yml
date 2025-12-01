@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: monitoring-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/monitoring}
+    username: ${SPRING_DATASOURCE_USERNAME:monitor_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:monitor_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  rabbitmq:
+    host: ${SPRING_RABBITMQ_HOST:rabbitmq}
+    port: ${SPRING_RABBITMQ_PORT:5672}
+    username: ${SPRING_RABBITMQ_USERNAME:guest}
+    password: ${SPRING_RABBITMQ_PASSWORD:guest}
+
+server:
+  port: 8083
+
+springdoc:
+  api-docs:
+    path: /monitoring/v3/api-docs
+  swagger-ui:
+    path: /monitoring/swagger-ui
+    config-url: /api/monitoring/v3/api-docs/swagger-config
+    url: /api/monitoring/v3/api-docs

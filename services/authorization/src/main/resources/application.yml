@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: authorization-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/authorization}
+    username: ${SPRING_DATASOURCE_USERNAME:auth_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:auth_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+springdoc:
+  swagger-ui:
+    path: /auth/swagger-ui
+    config-url: /api/auth/v3/api-docs/swagger-config
+    url: /api/auth/v3/api-docs
+  api-docs:
+    path: /auth/v3/api-docs
+
+services:
+  user:
+    url: ${USER_SERVICE_URL:http://user-service:8081}

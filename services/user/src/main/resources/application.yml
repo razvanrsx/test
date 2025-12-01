@@ -1,0 +1,28 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/users}
+    username: ${SPRING_DATASOURCE_USERNAME:user_user}
+    password: ${SPRING_DATASOURCE_PASSWORD:user_password}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+    defer-datasource-initialization: true
+  sql:
+    init:
+      mode: always
+      continue-on-error: true
+springdoc:
+  swagger-ui:
+    path: /users/swagger-ui
+    config-url: /api/users/v3/api-docs/swagger-config
+    url: /api/users/v3/api-docs
+  api-docs:
+    path: /users/v3/api-docs

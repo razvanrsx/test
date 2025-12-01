@@ -1,0 +1,55 @@
+### Obtain a JWT token through Traefik
+POST http://localhost:8080/api/auth/token
+Content-Type: application/json
+
+{
+  "username": "admin",
+  "password": "admin123"
+}
+
+### List users
+GET http://localhost:8080/api/users
+
+### Create a new user
+POST http://localhost:8080/api/users
+Content-Type: application/json
+
+{
+  "username": "charlie",
+  "password": "charlie123",
+  "email": "charlie@example.com",
+  "role": "CLIENT"
+}
+
+### Create a device
+POST http://localhost:8080/api/devices
+Content-Type: application/json
+
+{
+  "name": "Inverter",
+  "type": "INVERTER",
+  "status": "ACTIVE",
+  "maxConsumption": 3.7,
+  "userId": 1
+}
+
+### Fetch all devices
+GET http://localhost:8080/api/devices
+
+### Fetch devices by user
+GET http://localhost:8080/api/devices?userId=1
+
+### Fetch monitoring aggregates for all devices
+GET http://localhost:8080/api/monitoring/consumption
+
+### Fetch monitoring aggregates for a device
+GET http://localhost:8080/api/monitoring/consumption/device/1
+
+### Swagger UI (Authorization service)
+GET http://localhost:8080/api/auth/swagger-ui/index.html
+
+### Swagger UI (Monitoring service)
+GET http://localhost:8080/api/monitoring/swagger-ui/index.html
+
+### OpenAPI JSON (Device service)
+GET http://localhost:8080/api/devices/v3/api-docs

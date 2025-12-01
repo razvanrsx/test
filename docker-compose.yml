@@ -1,0 +1,159 @@
+version: "3.9"
+
+services:
+  traefik:
+    image: traefik:v2.10
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --entrypoints.web.address=:8080
+    ports:
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+
+  authorization-service:
+    build: ./services/authorization
+    depends_on:
+      - authorization-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://authorization-db:5432/authorization
+      SPRING_DATASOURCE_USERNAME: auth_user
+      SPRING_DATASOURCE_PASSWORD: auth_password
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-change-me-in-production}
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.authorization.rule=PathPrefix(`/api/auth`)"
+      - "traefik.http.routers.authorization.entrypoints=web"
+      - "traefik.http.routers.authorization.priority=10"
+      - "traefik.http.middlewares.authorization-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.authorization.middlewares=authorization-strip"
+      - "traefik.http.services.authorization.loadbalancer.server.port=8080"
+
+  authorization-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: authorization
+      POSTGRES_USER: auth_user
+      POSTGRES_PASSWORD: auth_password
+    volumes:
+      - authorization-data:/var/lib/postgresql/data
+
+  user-service:
+    build: ./services/user
+    depends_on:
+      - user-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://user-db:5432/users
+      SPRING_DATASOURCE_USERNAME: user_user
+      SPRING_DATASOURCE_PASSWORD: user_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.users.rule=PathPrefix(`/api/users`)"
+      - "traefik.http.routers.users.entrypoints=web"
+      - "traefik.http.routers.users.priority=10"
+      - "traefik.http.middlewares.users-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.users.middlewares=users-strip"
+      - "traefik.http.services.users.loadbalancer.server.port=8081"
+
+  user-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: user_user
+      POSTGRES_PASSWORD: user_password
+    volumes:
+      - user-data:/var/lib/postgresql/data
+
+  device-service:
+    build: ./services/device
+    depends_on:
+      - device-db
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://device-db:5432/devices
+      SPRING_DATASOURCE_USERNAME: device_user
+      SPRING_DATASOURCE_PASSWORD: device_password
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.devices.rule=PathPrefix(`/api/devices`)"
+      - "traefik.http.routers.devices.entrypoints=web"
+      - "traefik.http.routers.devices.priority=10"
+      - "traefik.http.middlewares.devices-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.devices.middlewares=devices-strip"
+      - "traefik.http.services.devices.loadbalancer.server.port=8082"
+
+  frontend:
+    build: ./frontend
+    depends_on:
+      - authorization-service
+      - user-service
+      - device-service
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.frontend.entrypoints=web"
+      - "traefik.http.routers.frontend.priority=1"
+      - "traefik.http.services.frontend.loadbalancer.server.port=80"
+
+  monitoring-service:
+    build: ./services/monitoring
+    depends_on:
+      - monitoring-db
+      - rabbitmq
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://monitoring-db:5432/monitoring
+      SPRING_DATASOURCE_USERNAME: monitor_user
+      SPRING_DATASOURCE_PASSWORD: monitor_password
+      SPRING_RABBITMQ_HOST: rabbitmq
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.monitoring.rule=PathPrefix(`/api/monitoring`)"
+      - "traefik.http.routers.monitoring.entrypoints=web"
+      - "traefik.http.routers.monitoring.priority=10"
+      - "traefik.http.middlewares.monitoring-strip.stripPrefix.prefixes=/api"
+      - "traefik.http.routers.monitoring.middlewares=monitoring-strip"
+      - "traefik.http.services.monitoring.loadbalancer.server.port=8083"
+
+  monitoring-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: monitoring
+      POSTGRES_USER: monitor_user
+      POSTGRES_PASSWORD: monitor_password
+    volumes:
+      - monitoring-data:/var/lib/postgresql/data
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  simulator-service:
+    build: ./services/simulator
+    depends_on:
+      - rabbitmq
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SIMULATOR_DEVICE_IDS: 1,2,3
+      SIMULATOR_INTERVAL_MS: 60000
+
+  device-db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: devices
+      POSTGRES_USER: device_user
+      POSTGRES_PASSWORD: device_password
+    volumes:
+      - device-data:/var/lib/postgresql/data
+
+volumes:
+  authorization-data:
+  user-data:
+  device-data:
+  monitoring-data:
